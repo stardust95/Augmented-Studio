@@ -65,6 +65,8 @@ public class ARBaseRenderer {
     // Stores orientation
     private boolean mIsPortrait = false;
 
+    private final float[] mProjectionMatrix = new float[16];
+
     public ARBaseRenderer(ARAppRendererControl renderingInterface, Activity activity, int deviceMode,
                           boolean stereo, float nearPlane, float farPlane)
     {
