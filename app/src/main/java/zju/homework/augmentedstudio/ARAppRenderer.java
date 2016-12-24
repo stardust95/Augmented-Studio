@@ -63,14 +63,17 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         vuforiaAppSession = session;
 
         mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
-                false, 10f, 5000);
+                false, 0.1f, 100f);
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 
-        initRendering();
+        Log.d(LOGTAG, "GLRenderer.onSurfaceCreated");
 
+        vuforiaAppSession.onSurfaceCreated();
+
+        mSampleAppRenderer.onSurfaceCreated();
     }
 
     void initRendering(){
@@ -78,7 +81,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
         cube = new CubeObject();
 
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, Vuforia.requiresAlpha() ? 0.0f : 1.0f);
+        GLES20.glClearColor(1.0f, 1.0f, 1.0f, Vuforia.requiresAlpha() ? 0.0f : 1.0f);
 
         for(Texture t : mTextures){
             GLES20.glGenTextures(1, t.mTextureID, 0);
@@ -147,8 +150,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         float[] mvpMatrix = new float[16];
 
         Matrix.setLookAtM(modelViewMatrix, 0,
-                0, 0, 15,
-                0, 0, -1,
+                0, 0, -3,
+                0, 0, 0,
                 0, 1, 0);
 
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
