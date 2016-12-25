@@ -12,6 +12,8 @@ import com.vuforia.Renderer;
 import com.vuforia.State;
 import com.vuforia.Vuforia;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -37,11 +39,12 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     private ARApplicationSession vuforiaAppSession;
     private ARBaseRenderer mSampleAppRenderer;
-    private Renderer mRenderer;
 
     private boolean mIsActive = false;
 
-   private Vector<Texture> mTextures = null;
+    private Vector<MeshObject> models;
+
+    private Vector<Texture> mTextures = null;
     private int shaderProgramID;
     private int vertexHandle;
     private int textureCoordHandle;
@@ -51,7 +54,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     // Constants:
     static final float kObjectScale = 3.f;
-
+    private float nearPlane = 0.1f;
+    private float farPlane = 1000f;
 //    private Teapot mTeapot;
 
     // Reference to main activity
@@ -72,15 +76,15 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         vuforiaAppSession = session;
 
         mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
-                false, 0.1f, 100f);
+                false, nearPlane, farPlane);
+
+        models = new Vector<>();
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 
         Log.d(LOGTAG, "GLRenderer.onSurfaceCreated");
-
-        mRenderer = Renderer.getInstance();
 
         vuforiaAppSession.onSurfaceCreated();
 
@@ -89,10 +93,6 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     void initRendering(){
         Log.i(LOGTAG, "initRendering");
-
-
-
-        cube = new CubeObject();
 
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, Vuforia.requiresAlpha() ? 0.0f : 1.0f);
 
@@ -122,13 +122,16 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                     "modelViewProjectionMatrix");
         }
 
-
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
 
-        Log.d(LOGTAG, "GLRenderer.onSurfaceChanged");
+        if(height == 0) { 						//Prevent A Divide By Zero By
+            height = 1; 						//Making Height Equal One
+        }
+
+        Log.d(LOGTAG, "GLRenderer.onSurfaceChanged: " + String.format("Width:%d, Height:%d", width, height));
 
         // Call function to update rendering when render surface
         // parameters have changed:
@@ -142,7 +145,11 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
         GLES20.glViewport(0, 0, width, height);
         float ratio = (float) width / (float) height;
-        Matrix.perspectiveM(mProjectionMatrix, 0, 45, ratio, 0.1f, 100f);
+
+        Matrix.perspectiveM(mProjectionMatrix, 0, 45.0f, ratio, nearPlane, farPlane);
+        Util.printMatrix(mProjectionMatrix, 4);
+        this.width = width;
+        this.height = height;
 
         // Call function to initialize rendering:
         initRendering();
@@ -166,41 +173,51 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         float[] modelViewMatrix = new float[16];
         float[] mvpMatrix = new float[16];
 
-        Matrix.setLookAtM(modelViewMatrix, 0,
-                mLookatMatrix[0], mLookatMatrix[1], mLookatMatrix[2],
-                mLookatMatrix[3], mLookatMatrix[4], mLookatMatrix[5],
-                mLookatMatrix[6], mLookatMatrix[7], mLookatMatrix[8]);
+        for(int i=0; i<models.size(); i++){
+
+            MeshObject model = models.get(i);
+
+            Matrix.setLookAtM(modelViewMatrix, 0,
+                    mLookatMatrix[0], mLookatMatrix[1], mLookatMatrix[2],
+                    mLookatMatrix[3], mLookatMatrix[4], mLookatMatrix[5],
+                    mLookatMatrix[6], mLookatMatrix[7], mLookatMatrix[8]);
+            float[] position = model.getPosition();
+            float[] rotation = model.getRotation();
 
 //        Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);         // use for AR mos
-        Matrix.multiplyMM(mvpMatrix, 0, mProjectionMatrix, 0, modelViewMatrix, 0);
+            Matrix.translateM(modelViewMatrix, 0, position[0], position[1], position[2]);
+            Matrix.rotateM(modelViewMatrix, 0, rotation[1], 0, 1, 0);
+            Matrix.rotateM(modelViewMatrix, 0, rotation[0], 1, 0, 0);
+            Matrix.multiplyMM(mvpMatrix, 0, mProjectionMatrix, 0, modelViewMatrix, 0);
 
-        GLES20.glUseProgram(shaderProgramID);
+            GLES20.glUseProgram(shaderProgramID);
 
-        GLES20.glVertexAttribPointer(vertexHandle, 3, GLES20.GL_FLOAT,
-                false, 0, cube.getVertices());
+            GLES20.glVertexAttribPointer(vertexHandle, 3, GLES20.GL_FLOAT,
+                    false, 0, model.getVertices());
 
-        GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
-                false, 0, cube.getTexCoords());
+            GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
+                    false, 0, model.getTexCoords());
 
-        GLES20.glEnableVertexAttribArray(vertexHandle);
-        GLES20.glEnableVertexAttribArray(textureCoordHandle);
+            GLES20.glEnableVertexAttribArray(vertexHandle);
+            GLES20.glEnableVertexAttribArray(textureCoordHandle);
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
-                mTextures.get(0).mTextureID[0]);
-        GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
-                mvpMatrix, 0);
-        GLES20.glUniform1i(texSampler2DHandle, 0);
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES,
-                cube.getNumObjectIndex(), GLES20.GL_UNSIGNED_SHORT,
-                cube.getIndices());
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
+                    mTextures.get(0).mTextureID[0]);
+            GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
+                    mvpMatrix, 0);
+            GLES20.glUniform1i(texSampler2DHandle, 0);
+            GLES20.glDrawElements(GLES20.GL_TRIANGLES,
+                    model.getNumObjectIndex(), GLES20.GL_UNSIGNED_SHORT,
+                    model.getIndices());
 
-        GLES20.glDisableVertexAttribArray(vertexHandle);
-        GLES20.glDisableVertexAttribArray(textureCoordHandle);
+            GLES20.glDisableVertexAttribArray(vertexHandle);
+            GLES20.glDisableVertexAttribArray(textureCoordHandle);
+
+        }
 
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 
-        mRenderer.end();
     }
 
     public boolean getActive() {
@@ -224,80 +241,113 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     }
 
 
-//    private float oldX;
-//    private float oldY;
-//    private final float ROTATE_SPEED = 0.4f;		//Proved to be good for normal rotation ( NEW )
-//    private final float TRANSFORM_SPEED = 0.02f;
-//    private boolean isTouching = false;
-//
-//    private int selectIndex = -1;
-//
-//    public boolean handleTouchEvent(MotionEvent event){
-//        float x = event.getX();
-//        float y = event.getY();
-//
-//        //If a touch is moved on the screen
-//        if(event.getAction() == MotionEvent.ACTION_MOVE) {
-//            //Calculate the change
-//            isTouching = true;
-//            float dx = x - oldX;
-//            float dy = y - oldY;
-//            //Define an upper area of 10% on the screen
-//            int leftArea = width / 4;
-//
-//            //Zoom in/out if the touch move has been made in the upper
-//            if( selectIndex >= 0 && selectIndex < models.size()  ){
-//
-//                if( mode.equals("Rotate") ) {
-//                    float[] rotation = models.get(selectIndex).getRotation();
-//                    rotation[0] += dy * ROTATE_SPEED;
-//                    rotation[1] += dx * ROTATE_SPEED;
-//                }else {
-//                    if(x < leftArea) {
-//                        float[] position = models.get(selectIndex).getPosition();
-//                        position[2] -= dy * TRANSFORM_SPEED / 2;
-//                        //Rotate around the axis otherwise
-//                    } else {
-//                        float[] position = models.get(selectIndex).getPosition();
-//                        position[0] += dx * TRANSFORM_SPEED;
-//                        position[1] += -dy * TRANSFORM_SPEED;
-//                    }
-//                }
-//
-//            }else if ( selectIndex == models.size() ){		// camera
-//
-//                if( mode.equals("Rotate") ) {
-//
-//                }else {
-//
-//                    if( x < leftArea ){
-//                        mLookatMatrix[2] -= dy * TRANSFORM_SPEED;
-//                        mLookatMatrix[5] -= dy * TRANSFORM_SPEED;
-//                    }else{
-//                        mLookatMatrix[0] -= dx * TRANSFORM_SPEED;
-//                        mLookatMatrix[3] -= dx * TRANSFORM_SPEED;
-//
-//                        mLookatMatrix[1] += dy * TRANSFORM_SPEED;
-//                        mLookatMatrix[4] += dy * TRANSFORM_SPEED;
-//                    }
-//                }
-//            }
-//
-//            if( selectIndex == 0 ){
+    private float oldX;
+    private float oldY;
+    private final float ROTATE_SPEED = 0.04f;		//Proved to be good for normal rotation ( NEW )
+    private final float TRANSFORM_SPEED = 0.01f;
+    private boolean isTouching = false;
+    private String mode = "Trans";
+//    private String mode = "Trans";
+    private int width, height;
+
+    private int selectIndex = 0;
+
+    public boolean handleTouchEvent(MotionEvent event){
+        float x = event.getX();
+        float y = event.getY();
+
+        //If a touch is moved on the screen
+        if(event.getAction() == MotionEvent.ACTION_MOVE) {
+            //Calculate the change
+            isTouching = true;
+            float dx = x - oldX;
+            float dy = y - oldY;
+            //Define an upper area of 10% on the screen
+            int leftArea = width / 4;
+
+            //Zoom in/out if the touch move has been made in the upper
+            if( selectIndex >= 0 && selectIndex < models.size() ){
+
+                if( mode.equals("Rotate") ) {
+                    float[] rotation = models.get(selectIndex).getRotation();
+                    rotation[0] -= dy * ROTATE_SPEED;
+                    rotation[1] += dx * ROTATE_SPEED;
+                }else {
+                    if(x < leftArea) {
+                        float[] position = models.get(selectIndex).getPosition();
+                        position[2] -= dy * TRANSFORM_SPEED / 2;
+                        //Rotate around the axis otherwise
+                    } else {
+                        float[] position = models.get(selectIndex).getPosition();
+                        position[0] -= dx * TRANSFORM_SPEED;
+                        position[1] -= dy * TRANSFORM_SPEED;
+                    }
+                }
+
+            }else if ( selectIndex == models.size() ){		// camera
+
+                if( mode.equals("Rotate") ) {
+
+                    mLookatMatrix[3] += dx * ROTATE_SPEED;
+                    mLookatMatrix[4] += dy * ROTATE_SPEED;
+
+                }else {
+
+                    if( x < leftArea ){
+                        mLookatMatrix[2] -= dy * TRANSFORM_SPEED;
+                        mLookatMatrix[5] -= dy * TRANSFORM_SPEED;
+                    }else{
+                        mLookatMatrix[0] -= dx * TRANSFORM_SPEED;
+                        mLookatMatrix[3] -= dx * TRANSFORM_SPEED;
+
+                        mLookatMatrix[1] += dy * TRANSFORM_SPEED;
+                        mLookatMatrix[4] += dy * TRANSFORM_SPEED;
+                    }
+                }
+            }
+
+            if( selectIndex == 0 ){
 //                updateLight();
-//            }
-//
-//
-//            //A press on the screen
-//        } else if(event.getAction() == MotionEvent.ACTION_UP) {
-////            mRenderer.isTouching = false;
-//            isTouching = false;
-//        }
-//
-//        //Remember the values
-//        oldX = x;
-//        oldY = y;
-//
-//        return true;
-//    }
+            }
+
+            //A press on the screen
+        } else if(event.getAction() == MotionEvent.ACTION_UP) {
+//            mRenderer.isTouching = false;
+
+
+            isTouching = false;
+        }
+
+        //Remember the values
+        oldX = x;
+        oldY = y;
+
+        return true;
+    }
+
+
+    public void changeSelection(int id){
+        selectIndex = id;
+    }
+
+    public void changeScale(boolean scaleUp){
+        if( selectIndex >= 0 && selectIndex < models.size() ){
+            float scale = models.get(selectIndex).getScale();
+            if ( scaleUp && scale < 10 )
+                scale += 0.5;
+            else if( !scaleUp && scale > 1 )
+                scale -= 0.5;
+            models.get(selectIndex).setScale(scale);
+        }
+
+
+    }
+
+    public void changeMode(String s) {
+        mode = s;
+    }
+
+    public Vector<MeshObject> getModels() {
+        return models;
+    }
 }

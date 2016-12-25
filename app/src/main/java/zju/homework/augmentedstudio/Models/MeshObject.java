@@ -11,9 +11,59 @@ import java.nio.ByteOrder;
 
 public abstract class MeshObject
 {
+    private final float[] defaultAmbient = new float[]{ 0.2f, 0.2f, 0.2f };
+    private final float[] defaultSpecular = new float[]{ 0, 0, 0 };
+    private final float[] defaultDiffuse = new float[]{ 0.8f, 0.8f, 0.8f };
 
-    public enum BUFFER_TYPE
-    {
+    private final float[] selectedAmbient = new float[]{ 1f, 0f, 0f };
+    private final float[] selectedSpecular = new float[]{ 1f, 0f, 0f };
+    private final float[] selectedDiffuse = new float[]{ 1f, 0f, 0f };
+
+    protected float height, width;
+
+    protected float[] position = new float[3];
+    protected float[] rotation = new float[3];
+    protected float scale = 5f;
+
+    public float getScale() {
+        return scale;
+    }
+
+    public void setScale(float scale) {
+        this.scale = scale;
+    }
+
+
+    public float[] getPosition() {
+        return position;
+    }
+
+    public void setPosition(float[] position) {
+        this.position = position;
+    }
+
+    public void setPosition(float x, float y, float z){
+        this.position[0] = x;
+        this.position[1] = y;
+        this.position[2] = z;
+    }
+
+
+    public float[] getRotation() {
+        return rotation;
+    }
+
+    public void setRotation(float[] rotation) {
+        this.rotation = rotation;
+    }
+
+    public void setRotation(float x, float y, float z){
+        this.rotation[0] = x;
+        this.rotation[1] = y;
+        this.rotation[2] = z;
+    }
+
+    public enum BUFFER_TYPE{
         BUFFER_TYPE_VERTEX, BUFFER_TYPE_TEXTURE_COORD, BUFFER_TYPE_NORMALS, BUFFER_TYPE_INDICES
     }
 

@@ -32,7 +32,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".Activities.ARSceneActivity"
-                  android:configChanges="keyboardHidden|orientation|screenSize">
+                  android:configChanges="keyboardHidden|orientation|screenSize"
+                    android:theme="@style/NoActionBar">
         </activity>
 
         <activity android:name="org.artoolkit.ar.base.camera.CameraPreferencesActivity">

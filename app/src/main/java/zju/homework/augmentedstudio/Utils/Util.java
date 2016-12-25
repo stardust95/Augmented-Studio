@@ -216,4 +216,17 @@ public class Util {
         return nProjMatrix;
     }
 
+
+    public static void printMatrix(float[] matrix, int n){
+        String tmp = "";
+        for(int i=0; i<n*n; i++){
+            tmp += String.valueOf(matrix[i]) + " ";
+            if( i % n == 0 && i > 0 ){
+                Log.i(LOGTAG, tmp);
+                tmp = "";
+            }
+        }
+        Log.i(LOGTAG, tmp);
+        return;
+    }
 }
