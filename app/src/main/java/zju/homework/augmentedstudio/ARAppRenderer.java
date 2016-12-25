@@ -3,6 +3,7 @@ package zju.homework.augmentedstudio;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.animation.AccelerateInterpolator;
@@ -38,7 +39,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     private static final String LOGTAG = "ARAppRenderer";
 
     private ARApplicationSession vuforiaAppSession;
-    private ARBaseRenderer mSampleAppRenderer;
+//    private ARBaseRenderer mSampleAppRenderer;
 
     private boolean mIsActive = false;
 
@@ -66,8 +67,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     private boolean ismIsActive;
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mLookatMatrix = new float[]{
-            0f, 0f, -10f,
-            0f, 0f, 0f,
+            0, 0, 10f,
+            0f, 0, 0,
             0f, 1.0f, 0f
     };
 
@@ -75,8 +76,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         mActivity = activity;
         vuforiaAppSession = session;
 
-        mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
-                false, nearPlane, farPlane);
+//        mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
+//                false, nearPlane, farPlane);
 
         models = new Vector<>();
     }
@@ -88,7 +89,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
         vuforiaAppSession.onSurfaceCreated();
 
-        mSampleAppRenderer.onSurfaceCreated();
+//        mSampleAppRenderer.onSurfaceCreated();
     }
 
     void initRendering(){
@@ -141,13 +142,13 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         vuforiaAppSession.onSurfaceChanged(width, height);
 
         // RenderingPrimitives to be updated when some rendering change is done
-        mSampleAppRenderer.onConfigurationChanged(mIsActive);
+//        mSampleAppRenderer.onConfigurationChanged(mIsActive);
 
         GLES20.glViewport(0, 0, width, height);
         float ratio = (float) width / (float) height;
 
         Matrix.perspectiveM(mProjectionMatrix, 0, 45.0f, ratio, nearPlane, farPlane);
-        Util.printMatrix(mProjectionMatrix, 4);
+//        Util.printMatrix(mProjectionMatrix, 4);
         this.width = width;
         this.height = height;
 
@@ -159,13 +160,14 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     public void onDrawFrame(GL10 gl) {
         if( !ismIsActive )
             return;
-        mSampleAppRenderer.render();
+        this.renderFrame(null, null);
     }
 
     @Override
     public void renderFrame(State state, float[] projectionMatrix) {
 
 //        Log.i(LOGTAG, "renderFrame");
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
@@ -181,13 +183,14 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                     mLookatMatrix[0], mLookatMatrix[1], mLookatMatrix[2],
                     mLookatMatrix[3], mLookatMatrix[4], mLookatMatrix[5],
                     mLookatMatrix[6], mLookatMatrix[7], mLookatMatrix[8]);
+
             float[] position = model.getPosition();
             float[] rotation = model.getRotation();
 
-//        Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);         // use for AR mos
             Matrix.translateM(modelViewMatrix, 0, position[0], position[1], position[2]);
             Matrix.rotateM(modelViewMatrix, 0, rotation[1], 0, 1, 0);
             Matrix.rotateM(modelViewMatrix, 0, rotation[0], 1, 0, 0);
+
             Matrix.multiplyMM(mvpMatrix, 0, mProjectionMatrix, 0, modelViewMatrix, 0);
 
             GLES20.glUseProgram(shaderProgramID);

@@ -68,7 +68,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
         appSession = new ARApplicationSession(this);
 
-        appSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        appSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_USER);
 
         spinnerArray = new ArrayList<>();
         mTextures = new Vector<Texture>();
