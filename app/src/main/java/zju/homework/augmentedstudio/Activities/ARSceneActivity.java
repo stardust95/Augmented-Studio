@@ -73,6 +73,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         spinnerArray = new ArrayList<>();
         mTextures = new Vector<Texture>();
         loadTextures();
+        spinnerArray.add("Cube");
+        spinnerArray.add("Camera");
 //        mGestureDetector = new GestureDetector(this, new GestureListen)
 
     }
@@ -132,8 +134,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         initLayouts();
 
         mRenderer.getModels().add(new CubeObject());
-//        spinnerArray.add("Cube");
-//        spinnerArray.add("Camera");
 //        addContentView(mGLView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 //                ViewGroup.LayoutParams.MATCH_PARENT));
     }
@@ -253,12 +253,11 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         ll.addView(spinner);
 
         this.addContentView(ll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-
     }
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        ((TextView) parent.getChildAt(0)).setTextColor(Color.WHITE);
+//        ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
         mGLView.getRenderer().changeSelection((int)id);
         mGLView.requestRender();
     }

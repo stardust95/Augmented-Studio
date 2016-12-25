@@ -33,12 +33,12 @@
         </activity>
         <activity android:name=".Activities.ARSceneActivity"
                   android:configChanges="keyboardHidden|orientation|screenSize"
-                    android:theme="@style/NoActionBar">
+                    android:theme="@style/AppTheme">
         </activity>
 
-        <activity android:name="org.artoolkit.ar.base.camera.CameraPreferencesActivity">
+        <!--<activity android:name="org.artoolkit.ar.base.camera.CameraPreferencesActivity">-->
 
-        </activity>
+        <!--</activity>-->
 
     </application>
 

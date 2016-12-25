@@ -25,6 +25,16 @@ public abstract class MeshObject
     protected float[] rotation = new float[3];
     protected float scale = 5f;
 
+    protected int textureID;
+
+    public int getTextureID() {
+        return textureID;
+    }
+
+    public void setTextureID(int textureID) {
+        this.textureID = textureID;
+    }
+
     public float getScale() {
         return scale;
     }

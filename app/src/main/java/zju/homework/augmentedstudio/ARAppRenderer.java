@@ -39,7 +39,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     private static final String LOGTAG = "ARAppRenderer";
 
     private ARApplicationSession vuforiaAppSession;
-//    private ARBaseRenderer mSampleAppRenderer;
+    private ARBaseRenderer mSampleAppRenderer;
 
     private boolean mIsActive = false;
 
@@ -76,8 +76,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         mActivity = activity;
         vuforiaAppSession = session;
 
-//        mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
-//                false, nearPlane, farPlane);
+        mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
+                false, nearPlane, farPlane);
 
         models = new Vector<>();
     }
@@ -89,7 +89,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
         vuforiaAppSession.onSurfaceCreated();
 
-//        mSampleAppRenderer.onSurfaceCreated();
+        mSampleAppRenderer.onSurfaceCreated();
     }
 
     void initRendering(){
@@ -142,7 +142,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         vuforiaAppSession.onSurfaceChanged(width, height);
 
         // RenderingPrimitives to be updated when some rendering change is done
-//        mSampleAppRenderer.onConfigurationChanged(mIsActive);
+        mSampleAppRenderer.onConfigurationChanged(mIsActive);
 
         GLES20.glViewport(0, 0, width, height);
         float ratio = (float) width / (float) height;
@@ -160,6 +160,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     public void onDrawFrame(GL10 gl) {
         if( !ismIsActive )
             return;
+//        mSampleAppRenderer.render();
         this.renderFrame(null, null);
     }
 
@@ -207,6 +208,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
                     mTextures.get(0).mTextureID[0]);
+//                    model.getTextureID());
+
             GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
                     mvpMatrix, 0);
             GLES20.glUniform1i(texSampler2DHandle, 0);
@@ -282,7 +285,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                         //Rotate around the axis otherwise
                     } else {
                         float[] position = models.get(selectIndex).getPosition();
-                        position[0] -= dx * TRANSFORM_SPEED;
+                        position[0] += dx * TRANSFORM_SPEED;
                         position[1] -= dy * TRANSFORM_SPEED;
                     }
                 }
