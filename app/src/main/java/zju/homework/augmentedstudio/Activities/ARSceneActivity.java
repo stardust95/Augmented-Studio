@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -21,18 +20,18 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Spinner;
-import android.widget.TextView;
 
 import com.vuforia.State;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 
 import zju.homework.augmentedstudio.ARAppRenderer;
 import zju.homework.augmentedstudio.ARApplicationSession;
 import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Models.CubeObject;
+import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.R;
@@ -73,10 +72,10 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         spinnerArray = new ArrayList<>();
         mTextures = new Vector<Texture>();
         loadTextures();
-        spinnerArray.add("Cube");
-        spinnerArray.add("Camera");
-//        mGestureDetector = new GestureDetector(this, new GestureListen)
 
+        spinnerArray.add("Cube");
+        spinnerArray.add("Buildings");
+        spinnerArray.add("Camera");
     }
 
     @Override
@@ -89,7 +88,24 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     private void loadTextures(){
         mTextures.add(Texture.loadTextureFromApk("texture.bmp", getAssets()));
+        mTextures.add(Texture.loadTextureFromApk("Buildings.jpeg", getAssets()));
+    }
 
+    private void testLoadModel(){
+
+
+        mRenderer.getModels().add(new CubeObject());
+
+        ModelObject object = new ModelObject();
+        try {
+            object.loadTextModel(this.getAssets(), "Buildings.txt");
+            mRenderer.getModels().add(object);
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+
+
+        return;
     }
 
     @Override
@@ -133,7 +149,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
         initLayouts();
 
-        mRenderer.getModels().add(new CubeObject());
+//        mRenderer.getModels().add(new CubeObject());
+        testLoadModel();
+
 //        addContentView(mGLView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 //                ViewGroup.LayoutParams.MATCH_PARENT));
     }
@@ -149,6 +167,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         mGLView.setRenderer(mRenderer);
         mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         mGLView.setZOrderMediaOverlay(true);
+
+//        mGestureDetector = new GestureDetector(this, new GestureListen)
     }
 
     // Adds the Overlay view to the GLView
@@ -210,7 +230,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
 
     Spinner spinner = null;
-    private ArrayList<String> spinnerArray = null;
+    private ArrayList<String> spinnerArray = null;          // must use this theme
 
     private void initLayouts(){
         String[] buttonTexts = new String[]{ "Rotate", "Transform" };

@@ -22,6 +22,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
 import zju.homework.augmentedstudio.Models.CubeObject;
+import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.CubeShaders;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.Texture;
@@ -207,15 +208,21 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
-                    mTextures.get(0).mTextureID[0]);
+                    mTextures.get(i).mTextureID[0]);
 //                    model.getTextureID());
 
             GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
                     mvpMatrix, 0);
             GLES20.glUniform1i(texSampler2DHandle, 0);
-            GLES20.glDrawElements(GLES20.GL_TRIANGLES,
-                    model.getNumObjectIndex(), GLES20.GL_UNSIGNED_SHORT,
-                    model.getIndices());
+
+            if( model instanceof ModelObject ){
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0,
+                        model.getNumObjectVertex());
+            }else{
+                GLES20.glDrawElements(GLES20.GL_TRIANGLES,
+                        model.getNumObjectIndex(), GLES20.GL_UNSIGNED_SHORT,
+                        model.getIndices());
+            }
 
             GLES20.glDisableVertexAttribArray(vertexHandle);
             GLES20.glDisableVertexAttribArray(textureCoordHandle);
@@ -294,8 +301,10 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
                 if( mode.equals("Rotate") ) {
 
-                    mLookatMatrix[3] += dx * ROTATE_SPEED;
-                    mLookatMatrix[4] += dy * ROTATE_SPEED;
+//                    if( mLookatMatrix[3] < 90 && (mLookatMatrix[3]+dx * ROTATE_SPEED) > 0 )
+                        mLookatMatrix[3] += dx * ROTATE_SPEED;
+//                    if( mLookatMatrix[4] < 90 && (mLookatMatrix[4]+dy * ROTATE_SPEED) > 0 )
+                        mLookatMatrix[4] += dy * ROTATE_SPEED;
 
                 }else {
 
