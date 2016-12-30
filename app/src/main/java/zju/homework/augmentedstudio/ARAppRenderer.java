@@ -5,7 +5,6 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 
 import com.vuforia.Device;
 import com.vuforia.Matrix44F;
@@ -21,7 +20,6 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
-import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.CubeShaders;
 import zju.homework.augmentedstudio.Models.MeshObject;
@@ -40,7 +38,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     private static final String LOGTAG = "ARAppRenderer";
 
     private ARApplicationSession vuforiaAppSession;
-    private ARBaseRenderer mSampleAppRenderer;
+    private ARBaseRenderer arBaseRenderer;
 
     private boolean mIsActive = false;
 
@@ -76,7 +74,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         mActivity = activity;
         vuforiaAppSession = session;
 
-        mSampleAppRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
+        arBaseRenderer = new ARBaseRenderer(this, mActivity, Device.MODE.MODE_AR,
                 false, nearPlane, farPlane);
 
         models = new Vector<>();
@@ -89,7 +87,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
         vuforiaAppSession.onSurfaceCreated();
 
-        mSampleAppRenderer.onSurfaceCreated();
+        arBaseRenderer.onSurfaceCreated();
     }
 
     void initRendering(){
@@ -142,7 +140,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         vuforiaAppSession.onSurfaceChanged(width, height);
 
         // RenderingPrimitives to be updated when some rendering change is done
-        mSampleAppRenderer.onConfigurationChanged(mIsActive);
+        arBaseRenderer.onConfigurationChanged(mIsActive);
 
         GLES20.glViewport(0, 0, width, height);
         float ratio = (float) width / (float) height;
@@ -160,13 +158,16 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     public void onDrawFrame(GL10 gl) {
         if( !mIsActive)
             return;
-        mSampleAppRenderer.render();
+        arBaseRenderer.render();
 //        this.renderFrame(null, null);
     }
 
     @Override
     public void renderFrame(State state, float[] projectionMatrix) {
-        mSampleAppRenderer.renderVideoBackground();
+
+
+
+        arBaseRenderer.renderVideoBackground();
 //        Log.i(LOGTAG, "renderFrame");
 
 //        if( true ){
@@ -310,7 +311,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         this.mIsActive = ismIsActive;
 
         if ( this.mIsActive ){
-            mSampleAppRenderer.configureVideoBackground();
+            arBaseRenderer.configureVideoBackground();
         }
     }
 
@@ -439,7 +440,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     public void updateConfiguration()
     {
-        mSampleAppRenderer.onConfigurationChanged(mIsActive);
+        arBaseRenderer.onConfigurationChanged(mIsActive);
     }
 
     public void changeMode(String s) {

@@ -143,9 +143,10 @@ public class ARBaseRenderer {
     public void render()
     {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        State state;
+        State state, state2;
         // Get our current state
         state = TrackerManager.getInstance().getStateUpdater().updateState();
+
         mRenderer.begin(state);
 
         // We must detect if background reflection is active and adjust the
