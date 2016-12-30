@@ -219,9 +219,9 @@ public class Util {
 
     public static void printMatrix(float[] matrix, int n){
         String tmp = "";
-        for(int i=0; i<n*n; i++){
-            tmp += String.valueOf(matrix[i]) + " ";
-            if( i % n == 0 && i > 0 ){
+        for(int i=1; i<=n*n; i++){
+            tmp += String.format("\t%.2f ", matrix[i-1]);
+            if( i % n == 0 ){
                 Log.i(LOGTAG, tmp);
                 tmp = "";
             }

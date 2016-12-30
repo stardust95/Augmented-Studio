@@ -36,9 +36,9 @@ public class ARGLView extends GLSurfaceView{
         this.renderer = (ARAppRenderer) renderer;
     }
 
-    public ARAppRenderer getRenderer(){
-        return this.renderer;
-    }
+//    public ARAppRenderer getRenderer(){
+//        return this.renderer;
+//    }
 
 
     // Initialization.

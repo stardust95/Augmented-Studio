@@ -29,6 +29,7 @@ import android.widget.Toast;
 import com.vuforia.CameraDevice;
 import com.vuforia.DataSet;
 import com.vuforia.ObjectTracker;
+import com.vuforia.RotationalDeviceTracker;
 import com.vuforia.STORAGE_TYPE;
 import com.vuforia.State;
 import com.vuforia.Trackable;
@@ -112,9 +113,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             Log.i(LOGTAG, "ON SCALE");
             float span = detector.getCurrentSpan();
             if( span > curSpan ){       // scale up
-                mGLView.getRenderer().changeScale(true);
+                mRenderer.changeScale(true);
             }else {             // scale down
-                mGLView.getRenderer().changeScale(false);
+                mRenderer.changeScale(false);
             }
             curSpan = span;
             mGLView.requestRender();
@@ -160,7 +161,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             ex.printStackTrace();
         }
 
-
         return;
     }
 
@@ -170,11 +170,16 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         boolean result = true;
 
         TrackerManager tManager = TrackerManager.getInstance();
-        Tracker tracker;
+        Tracker otracker;
+        RotationalDeviceTracker rtracker;
 
-        // Trying to initialize the image tracker
-        tracker = tManager.initTracker(ObjectTracker.getClassType());
-        if (tracker == null)
+        // Trying to initialize the trackers
+        otracker = tManager.initTracker(ObjectTracker.getClassType());
+        rtracker = (RotationalDeviceTracker) tManager.initTracker(RotationalDeviceTracker.getClassType());
+        rtracker.setPosePrediction(true);
+        rtracker.setModelCorrection(rtracker.getDefaultHandheldModel());
+
+        if (otracker == null || rtracker == null )
         {
             Log.e(
                     LOGTAG,
@@ -192,10 +197,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         // Indicate if the trackers were started correctly
         boolean result = true;
 
-        Tracker objectTracker = TrackerManager.getInstance().getTracker(
-                ObjectTracker.getClassType());
-        if (objectTracker != null)
-            objectTracker.start();
+        Tracker otracker, rtracker;
+        otracker = TrackerManager.getInstance().getTracker(ObjectTracker.getClassType());
+        rtracker = TrackerManager.getInstance().getTracker(RotationalDeviceTracker.getClassType());
+
+        if ( mRenderer.getTrackerMode() == ARAppRenderer.TrackerMode.OBJECT_TRACKER  && otracker != null)
+            otracker.start();
+        if ( mRenderer.getTrackerMode() == ARAppRenderer.TrackerMode.ROTATION_TRACKER  && rtracker != null)
+            rtracker.start();
 
         return result;
     }
@@ -206,10 +215,15 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         // Indicate if the trackers were stopped correctly
         boolean result = true;
 
-        Tracker objectTracker = TrackerManager.getInstance().getTracker(
-                ObjectTracker.getClassType());
-        if (objectTracker != null)
-            objectTracker.stop();
+        Tracker otracker = null, rtracker = null;
+//        if( trackerMode == TrackerMode.OBJECT_TRACKER )
+        otracker = TrackerManager.getInstance().getTracker(ObjectTracker.getClassType());
+        rtracker = TrackerManager.getInstance().getTracker(RotationalDeviceTracker.getClassType());
+
+        if ( mRenderer.getTrackerMode() == ARAppRenderer.TrackerMode.ROTATION_TRACKER  && otracker != null)
+            otracker.stop();
+        if ( mRenderer.getTrackerMode() == ARAppRenderer.TrackerMode.OBJECT_TRACKER  && rtracker != null)
+            rtracker.stop();
 
         return result;
     }
@@ -222,7 +236,10 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         boolean result = true;
 
         TrackerManager tManager = TrackerManager.getInstance();
+//        if( trackerMode == TrackerMode.OBJECT_TRACKER )
         tManager.deinitTracker(ObjectTracker.getClassType());
+//        else
+        tManager.deinitTracker(RotationalDeviceTracker.getClassType());
 
         return result;
     }
@@ -330,17 +347,18 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         {
             mSwitchDatasetAsap = false;
             TrackerManager tm = TrackerManager.getInstance();
-            ObjectTracker ot = (ObjectTracker) tm.getTracker(ObjectTracker
-                    .getClassType());
-            if (ot == null || mCurrentDataset == null
-                    || ot.getActiveDataSet() == null)
-            {
-                Log.d(LOGTAG, "Failed to swap datasets");
-                return;
-            }
+//            if( trackerMode == TrackerMode.OBJECT_TRACKER ){
+                ObjectTracker ot = (ObjectTracker) tm.getTracker(ObjectTracker.getClassType());
+                if (ot == null || mCurrentDataset == null
+                        || ot.getActiveDataSet() == null)
+                {
+                    Log.d(LOGTAG, "Failed to swap datasets");
+                    return;
+                }
+                doUnloadTrackersData();
+                doLoadTrackersData();
+//            }
 
-            doUnloadTrackersData();
-            doLoadTrackersData();
         }
     }
 
@@ -386,7 +404,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
                         buttons[0].setEnabled(true);
                         buttons[1].setEnabled(false);
                     }
-                    mGLView.getRenderer().changeMode(text);
+                    mRenderer.changeMode(text);
                     mGLView.requestRender();
                 }
             });
@@ -410,14 +428,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 //        ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
-        mGLView.getRenderer().changeSelection((int)id);
+        mRenderer.changeSelection((int)id);
         mGLView.requestRender();
     }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
         // Another interface callback
-        mGLView.getRenderer().changeSelection(-1);
+        mRenderer.changeSelection(-1);
         mGLView.requestRender();
     }
 

@@ -8,6 +8,7 @@ import android.view.MotionEvent;
 
 import com.vuforia.Device;
 import com.vuforia.Matrix44F;
+import com.vuforia.ObjectTracker;
 import com.vuforia.State;
 import com.vuforia.Tool;
 import com.vuforia.Trackable;
@@ -26,6 +27,7 @@ import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARAppRendererControl;
 import zju.homework.augmentedstudio.GL.ARBaseRenderer;
+import zju.homework.augmentedstudio.Utils.ARMath;
 import zju.homework.augmentedstudio.Utils.Util;
 
 /**
@@ -36,6 +38,14 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
 
     private static final String LOGTAG = "ARAppRenderer";
+
+
+    public enum TrackerMode{
+        OBJECT_TRACKER, ROTATION_TRACKER
+    }
+
+    private TrackerMode trackerMode = TrackerMode.ROTATION_TRACKER;
+
 
     private ARApplicationSession vuforiaAppSession;
     private ARBaseRenderer arBaseRenderer;
@@ -165,8 +175,6 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     @Override
     public void renderFrame(State state, float[] projectionMatrix) {
 
-
-
         arBaseRenderer.renderVideoBackground();
 //        Log.i(LOGTAG, "renderFrame");
 
@@ -182,14 +190,26 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
         for(int tldx=0; tldx < state.getNumTrackableResults(); tldx++){
             TrackableResult result = state.getTrackableResult(tldx);
+
+            if( !result.isOfType(ObjectTracker.getClassType()) ){
+//                Log.i(LOGTAG, result.getType().toString());   // meaningless output
+//                continue;
+            }
+
             Trackable trackable = result.getTrackable();
 
             printUserData(trackable);
 
             Matrix44F modelViewMatrix_Vuforia = Tool.convertPose2GLMatrix(result.getPose());
-            modelViewMatrix = modelViewMatrix_Vuforia.getData();
+
+            if( trackerMode == TrackerMode.OBJECT_TRACKER ){
+                modelViewMatrix = modelViewMatrix_Vuforia.getData();
+            }else{
+                modelViewMatrix = ARMath.Matrix44FTranspose(ARMath.Matrix44FInverse(modelViewMatrix_Vuforia)).getData();
+            }
 
             Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
+            Util.printMatrix(mvpMatrix, 4);
 
             for(int i=0; i<models.size(); i++){
 
@@ -241,65 +261,6 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         }
 
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
-
-    }
-
-    private void drawModels(){
-
-        float[] modelViewMatrix = new float[16];
-        float[] mvpMatrix = new float[16];
-
-        for(int i=0; i<models.size(); i++){
-
-            MeshObject model = models.get(i);
-
-            Matrix.setLookAtM(modelViewMatrix, 0,
-                    mLookatMatrix[0], mLookatMatrix[1], mLookatMatrix[2],
-                    mLookatMatrix[3], mLookatMatrix[4], mLookatMatrix[5],
-                    mLookatMatrix[6], mLookatMatrix[7], mLookatMatrix[8]);
-
-            float[] position = model.getPosition();
-            float[] rotation = model.getRotation();
-
-            Matrix.translateM(modelViewMatrix, 0, position[0], position[1], position[2]);
-            Matrix.rotateM(modelViewMatrix, 0, rotation[1], 0, 1, 0);
-            Matrix.rotateM(modelViewMatrix, 0, rotation[0], 1, 0, 0);
-
-            Matrix.multiplyMM(mvpMatrix, 0, mProjectionMatrix, 0, modelViewMatrix, 0);
-
-            GLES20.glUseProgram(shaderProgramID);
-
-            GLES20.glVertexAttribPointer(vertexHandle, 3, GLES20.GL_FLOAT,
-                    false, 0, model.getVertices());
-
-            GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
-                    false, 0, model.getTexCoords());
-
-            GLES20.glEnableVertexAttribArray(vertexHandle);
-            GLES20.glEnableVertexAttribArray(textureCoordHandle);
-
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
-                    mTextures.get(i).mTextureID[0]);
-//                    model.getTextureID());
-
-            GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
-                    mvpMatrix, 0);
-            GLES20.glUniform1i(texSampler2DHandle, 0);
-
-            if( model instanceof ModelObject ){
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0,
-                        model.getNumObjectVertex());
-            }else{
-                GLES20.glDrawElements(GLES20.GL_TRIANGLES,
-                        model.getNumObjectIndex(), GLES20.GL_UNSIGNED_SHORT,
-                        model.getIndices());
-            }
-
-            GLES20.glDisableVertexAttribArray(vertexHandle);
-            GLES20.glDisableVertexAttribArray(textureCoordHandle);
-
-        }
 
     }
 
@@ -449,5 +410,13 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     public Vector<MeshObject> getModels() {
         return models;
+    }
+
+    public TrackerMode getTrackerMode() {
+        return trackerMode;
+    }
+
+    public void setTrackerMode(TrackerMode trackerMode) {
+        this.trackerMode = trackerMode;
     }
 }
