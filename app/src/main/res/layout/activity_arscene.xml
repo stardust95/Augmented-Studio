@@ -3,7 +3,8 @@
               android:id="@+id/topLayout"
               android:orientation="horizontal"
               android:layout_width="match_parent"
-              android:layout_height="match_parent">
+              android:layout_height="match_parent"
+    android:background="@color/colorPrimaryDark">
 
     <FrameLayout
         android:id="@+id/mainLayout"

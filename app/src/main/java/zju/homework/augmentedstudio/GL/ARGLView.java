@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
+import android.view.ScaleGestureDetector;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -21,6 +22,7 @@ public class ARGLView extends GLSurfaceView{
     private static String LOGTAG = ARGLView.class.getName();
 
     private ARAppRenderer renderer;
+
 
     public ARGLView(Context context){
         super(context);

@@ -14,6 +14,7 @@ import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -55,7 +56,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     private ARGLView mGLView;
 
-    private GestureDetector mGestureDetector;
+//    private GestureDetector mGestureDetector;
 
     private ARApplicationSession appSession;
 
@@ -81,6 +82,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     private boolean mSwitchDatasetAsap = false;
     private boolean mContAutoFocus = false;
 
+    private ScaleGestureDetector scaleListener;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,15 +98,48 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         mTextures = new Vector<Texture>();
         loadTextures();
 
+        scaleListener = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());
+
         spinnerArray.add("Cube");
         spinnerArray.add("Buildings");
-        spinnerArray.add("Camera");
+//        spinnerArray.add("Camera");
+    }
+
+    public class ScaleGestureListener implements  ScaleGestureDetector.OnScaleGestureListener{
+        private float curSpan;
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            Log.i(LOGTAG, "ON SCALE");
+            float span = detector.getCurrentSpan();
+            if( span > curSpan ){       // scale up
+                mGLView.getRenderer().changeScale(true);
+            }else {             // scale down
+                mGLView.getRenderer().changeScale(false);
+            }
+            curSpan = span;
+            mGLView.requestRender();
+            return false;
+        }
+
+        @Override
+        public boolean onScaleBegin(ScaleGestureDetector detector) {
+            curSpan = detector.getCurrentSpan();
+            return true;
+        }
+
+        @Override
+        public void onScaleEnd(ScaleGestureDetector detector) {
+
+        }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+//        Log.i(LOGTAG, "OnTouchEvent");
         super.onTouchEvent(event);
+        scaleListener.onTouchEvent(event);
         mRenderer.handleTouchEvent(event);
+
         mGLView.requestRender();
         return true;
     }
@@ -116,12 +151,10 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     private void testLoadModel(){
 
-
-        mRenderer.getModels().add(new CubeObject());
-
         ModelObject object = new ModelObject();
         try {
             object.loadTextModel(this.getAssets(), "Buildings.txt");
+            mRenderer.getModels().add(new CubeObject());
             mRenderer.getModels().add(object);
         }catch (IOException ex){
             ex.printStackTrace();
@@ -211,7 +244,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             testLoadModel();
 
             try{
-
                 appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
 
             }catch (ARApplicationException ex){
@@ -335,6 +367,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         String[] buttonTexts = new String[]{ "Rotate", "Transform" };
         LinearLayout ll = new LinearLayout(this);
         ll.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
+        ll.setBackgroundColor(Color.WHITE);
 
         final Button[] buttons = new Button[2];
         for(int i=0; i<buttons.length; i++){
@@ -371,7 +404,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
         ll.addView(spinner);
 
-        this.addContentView(ll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        this.addContentView(ll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
     }
 
     @Override

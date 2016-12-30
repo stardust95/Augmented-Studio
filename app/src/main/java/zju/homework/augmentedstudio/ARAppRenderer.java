@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 
 import com.vuforia.Device;
 import com.vuforia.Matrix44F;
@@ -20,6 +21,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
+import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.CubeShaders;
 import zju.homework.augmentedstudio.Models.MeshObject;
@@ -191,6 +193,16 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
             for(int i=0; i<models.size(); i++){
 
                 MeshObject model = models.get(i);
+                float scale = model.getScale();
+                float[] position = model.getPosition();
+                float[] rotation = model.getRotation();
+
+                float[] tmpMvpMatrix = mvpMatrix.clone();
+
+                Matrix.scaleM(tmpMvpMatrix, 0, scale, scale, scale);
+                Matrix.rotateM(tmpMvpMatrix, 0, rotation[1], 0, 1, 0);
+                Matrix.rotateM(tmpMvpMatrix, 0, rotation[0], 1, 0, 0);
+                Matrix.translateM(tmpMvpMatrix, 0, position[0], position[1], position[2]);
 
                 GLES20.glUseProgram(shaderProgramID);
 
@@ -209,7 +221,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 //                    model.getTextureID());
 
                 GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
-                        mvpMatrix, 0);
+                        tmpMvpMatrix, 0);
                 GLES20.glUniform1i(texSampler2DHandle, 0);
 
                 if( model instanceof ModelObject ){
@@ -402,16 +414,20 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         selectIndex = id;
     }
 
+
+    private static float ScaleFactor = 0.1f;
     public void changeScale(boolean scaleUp){
+
         if( selectIndex >= 0 && selectIndex < models.size() ){
             float scale = models.get(selectIndex).getScale();
-            if ( scaleUp && scale < 10 )
-                scale += 0.5;
-            else if( !scaleUp && scale > 1 )
-                scale -= 0.5;
-            models.get(selectIndex).setScale(scale);
-        }
 
+            if ( scaleUp && scale < 10 )
+                scale += ScaleFactor;
+            else if( !scaleUp && scale > 1 )
+                scale -= ScaleFactor;
+            models.get(selectIndex).setScale(scale);
+
+        }
 
     }
 
