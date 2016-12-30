@@ -7,7 +7,11 @@ import android.util.Log;
 import android.view.MotionEvent;
 
 import com.vuforia.Device;
+import com.vuforia.Matrix44F;
 import com.vuforia.State;
+import com.vuforia.Tool;
+import com.vuforia.Trackable;
+import com.vuforia.TrackableResult;
 import com.vuforia.Vuforia;
 
 import java.util.Vector;
@@ -162,12 +166,72 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     public void renderFrame(State state, float[] projectionMatrix) {
         mSampleAppRenderer.renderVideoBackground();
 //        Log.i(LOGTAG, "renderFrame");
-//        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        if( true ){
-            return;
-        }
+
+//        if( true ){
+//            return;
+//        }
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glCullFace(GLES20.GL_BACK);
+
+        float[] modelViewMatrix = new float[16];
+        float[] mvpMatrix = new float[16];
+
+        for(int tldx=0; tldx < state.getNumTrackableResults(); tldx++){
+            TrackableResult result = state.getTrackableResult(tldx);
+            Trackable trackable = result.getTrackable();
+
+            printUserData(trackable);
+
+            Matrix44F modelViewMatrix_Vuforia = Tool.convertPose2GLMatrix(result.getPose());
+            modelViewMatrix = modelViewMatrix_Vuforia.getData();
+
+            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
+
+            for(int i=0; i<models.size(); i++){
+
+                MeshObject model = models.get(i);
+
+                GLES20.glUseProgram(shaderProgramID);
+
+                GLES20.glVertexAttribPointer(vertexHandle, 3, GLES20.GL_FLOAT,
+                        false, 0, model.getVertices());
+
+                GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
+                        false, 0, model.getTexCoords());
+
+                GLES20.glEnableVertexAttribArray(vertexHandle);
+                GLES20.glEnableVertexAttribArray(textureCoordHandle);
+
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
+                        mTextures.get(i).mTextureID[0]);
+//                    model.getTextureID());
+
+                GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
+                        mvpMatrix, 0);
+                GLES20.glUniform1i(texSampler2DHandle, 0);
+
+                if( model instanceof ModelObject ){
+                    GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0,
+                            model.getNumObjectVertex());
+                }else{
+                    GLES20.glDrawElements(GLES20.GL_TRIANGLES,
+                            model.getNumObjectIndex(), GLES20.GL_UNSIGNED_SHORT,
+                            model.getIndices());
+                }
+
+                GLES20.glDisableVertexAttribArray(vertexHandle);
+                GLES20.glDisableVertexAttribArray(textureCoordHandle);
+
+            }
+        }
+
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+
+    }
+
+    private void drawModels(){
 
         float[] modelViewMatrix = new float[16];
         float[] mvpMatrix = new float[16];
@@ -223,8 +287,6 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
             GLES20.glDisableVertexAttribArray(textureCoordHandle);
 
         }
-
-        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 
     }
 
@@ -351,6 +413,12 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         }
 
 
+    }
+
+    private void printUserData(Trackable trackable)
+    {
+        String userData = (String) trackable.getUserData();
+        Log.d(LOGTAG, "UserData:Retreived User Data	\"" + userData + "\"");
     }
 
     public void updateConfiguration()
