@@ -134,6 +134,7 @@ public class ARApplicationSession implements Vuforia.UpdateCallbackInterface {
     // Starts Vuforia, initialize and starts the camera and start the trackers
     public void startAR(int camera) throws ARApplicationException
     {
+        Log.d(LOGTAG, "startAR");
         String error;
         if(mCameraRunning)
         {

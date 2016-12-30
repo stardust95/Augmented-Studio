@@ -3,25 +3,19 @@ package zju.homework.augmentedstudio;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.animation.AccelerateInterpolator;
 
 import com.vuforia.Device;
-import com.vuforia.Renderer;
 import com.vuforia.State;
 import com.vuforia.Vuforia;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
-import zju.homework.augmentedstudio.Models.CubeObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.CubeShaders;
 import zju.homework.augmentedstudio.Models.MeshObject;
@@ -65,7 +59,6 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     MeshObject cube;
 
-    private boolean ismIsActive;
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mLookatMatrix = new float[]{
             0, 0, 10f,
@@ -159,18 +152,20 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        if( !ismIsActive )
+        if( !mIsActive)
             return;
-//        mSampleAppRenderer.render();
-        this.renderFrame(null, null);
+        mSampleAppRenderer.render();
+//        this.renderFrame(null, null);
     }
 
     @Override
     public void renderFrame(State state, float[] projectionMatrix) {
-
+        mSampleAppRenderer.renderVideoBackground();
 //        Log.i(LOGTAG, "renderFrame");
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-
+//        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        if( true ){
+            return;
+        }
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glEnable(GLES20.GL_CULL_FACE);
 
@@ -234,14 +229,14 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     }
 
     public boolean getActive() {
-        return ismIsActive;
+        return mIsActive;
     }
 
     public void setActive(boolean ismIsActive) {
-        this.ismIsActive = ismIsActive;
+        this.mIsActive = ismIsActive;
 
-        if ( mIsActive ){
-//            mSampleAppRenderer.configureVideoBackground();
+        if ( this.mIsActive ){
+            mSampleAppRenderer.configureVideoBackground();
         }
     }
 
@@ -356,6 +351,11 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         }
 
 
+    }
+
+    public void updateConfiguration()
+    {
+        mSampleAppRenderer.onConfigurationChanged(mIsActive);
     }
 
     public void changeMode(String s) {

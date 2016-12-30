@@ -38,7 +38,7 @@ import zju.homework.augmentedstudio.Shaders.VideoBackgroundShader;
 
 public class ARBaseRenderer {
 
-    private static final String LOGTAG = "ARBaseRenderer";
+    private static final String LOGTAG = "SampleAppRenderer";
 
     private RenderingPrimitives mRenderingPrimitives = null;
     private ARAppRendererControl mRenderingInterface = null;
@@ -53,7 +53,7 @@ public class ARBaseRenderer {
 
     // Shader user to render the video background on AR mode
     private int vbShaderProgramID = 0;
-    private int vbTexARr2DHandle = 0;
+    private int vbTexSampler2DHandle = 0;
     private int vbVertexHandle = 0;
     private int vbTexCoordHandle = 0;
     private int vbProjectionMatrixHandle = 0;
@@ -65,10 +65,8 @@ public class ARBaseRenderer {
     // Stores orientation
     private boolean mIsPortrait = false;
 
-    private final float[] mProjectionMatrix = new float[16];
-
     public ARBaseRenderer(ARAppRendererControl renderingInterface, Activity activity, int deviceMode,
-                          boolean stereo, float nearPlane, float farPlane)
+                             boolean stereo, float nearPlane, float farPlane)
     {
         mActivity = activity;
 
@@ -121,8 +119,8 @@ public class ARBaseRenderer {
             // Activate shader:
             GLES20.glUseProgram(vbShaderProgramID);
 
-            // Retrieve handler for texture ARr shader uniform variable:
-            vbTexARr2DHandle = GLES20.glGetUniformLocation(vbShaderProgramID, "texARr2D");
+            // Retrieve handler for texture sampler shader uniform variable:
+            vbTexSampler2DHandle = GLES20.glGetUniformLocation(vbShaderProgramID, "texSampler2D");
 
             // Retrieve handler for projection matrix shader uniform variable:
             vbProjectionMatrixHandle = GLES20.glGetUniformLocation(vbShaderProgramID, "projectionMatrix");
@@ -130,7 +128,7 @@ public class ARBaseRenderer {
             vbVertexHandle = GLES20.glGetAttribLocation(vbShaderProgramID, "vertexPosition");
             vbTexCoordHandle = GLES20.glGetAttribLocation(vbShaderProgramID, "vertexTexCoord");
             vbProjectionMatrixHandle = GLES20.glGetUniformLocation(vbShaderProgramID, "projectionMatrix");
-            vbTexARr2DHandle = GLES20.glGetUniformLocation(vbShaderProgramID, "texARr2D");
+            vbTexSampler2DHandle = GLES20.glGetUniformLocation(vbShaderProgramID, "texSampler2D");
 
             // Stop using the program
             GLES20.glUseProgram(0);
@@ -202,7 +200,7 @@ public class ARBaseRenderer {
 
             currentView = viewID;
 
-            // Call renderFrame from the app renderer class which implements ARAppRendererControl
+            // Call renderFrame from the app renderer class which implements SampleAppRendererControl
             // This will be called for MONO, LEFT and RIGHT views, POSTPROCESS will not render the
             // frame
             if(currentView != VIEW.VIEW_POSTPROCESS)
@@ -254,7 +252,7 @@ public class ARBaseRenderer {
         GLES20.glVertexAttribPointer(vbVertexHandle, 3, GLES20.GL_FLOAT, false, 0, vbMesh.getPositions().asFloatBuffer());
         GLES20.glVertexAttribPointer(vbTexCoordHandle, 2, GLES20.GL_FLOAT, false, 0, vbMesh.getUVs().asFloatBuffer());
 
-        GLES20.glUniform1i(vbTexARr2DHandle, vbVideoTextureUnit);
+        GLES20.glUniform1i(vbTexSampler2DHandle, vbVideoTextureUnit);
 
         // Render the video background with the custom shader
         // First, we enable the vertex arrays

@@ -1,12 +1,15 @@
 package zju.homework.augmentedstudio.Activities;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -20,8 +23,17 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Spinner;
+import android.widget.Toast;
 
+import com.vuforia.CameraDevice;
+import com.vuforia.DataSet;
+import com.vuforia.ObjectTracker;
+import com.vuforia.STORAGE_TYPE;
 import com.vuforia.State;
+import com.vuforia.Trackable;
+import com.vuforia.Tracker;
+import com.vuforia.TrackerManager;
+import com.vuforia.Vuforia;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,13 +73,24 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     // The textures we will use for rendering:
     private Vector<Texture> mTextures;
 
+    private int mCurrentDatasetSelectionIndex = 0;
+    private DataSet mCurrentDataset;
+
+    private ArrayList<String> mDatasetStrings = new ArrayList<String>();
+
+    private boolean mSwitchDatasetAsap = false;
+    private boolean mContAutoFocus = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mDatasetStrings.add("StonesAndChips.xml");
+        mDatasetStrings.add("Tarmac.xml");
+
         appSession = new ARApplicationSession(this);
 
-        appSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_USER);
+        appSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         spinnerArray = new ArrayList<>();
         mTextures = new Vector<Texture>();
@@ -110,61 +133,121 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     @Override
     public boolean doInitTrackers() {
-        return false;
-    }
+        // Indicate if the trackers were initialized correctly
+        boolean result = true;
 
-    @Override
-    public boolean doLoadTrackersData() {
-        return false;
+        TrackerManager tManager = TrackerManager.getInstance();
+        Tracker tracker;
+
+        // Trying to initialize the image tracker
+        tracker = tManager.initTracker(ObjectTracker.getClassType());
+        if (tracker == null)
+        {
+            Log.e(
+                    LOGTAG,
+                    "Tracker not initialized. Tracker already initialized or the camera is already started");
+            result = false;
+        } else
+        {
+            Log.i(LOGTAG, "Tracker successfully initialized");
+        }
+        return result;
     }
 
     @Override
     public boolean doStartTrackers() {
-        return false;
+        // Indicate if the trackers were started correctly
+        boolean result = true;
+
+        Tracker objectTracker = TrackerManager.getInstance().getTracker(
+                ObjectTracker.getClassType());
+        if (objectTracker != null)
+            objectTracker.start();
+
+        return result;
     }
 
     @Override
     public boolean doStopTrackers() {
-        return false;
+
+        // Indicate if the trackers were stopped correctly
+        boolean result = true;
+
+        Tracker objectTracker = TrackerManager.getInstance().getTracker(
+                ObjectTracker.getClassType());
+        if (objectTracker != null)
+            objectTracker.stop();
+
+        return result;
     }
 
-    @Override
-    public boolean doUnloadTrackersData() {
-        return false;
-    }
 
     @Override
     public boolean doDeinitTrackers() {
-        return false;
+
+        // Indicate if the trackers were deinitialized correctly
+        boolean result = true;
+
+        TrackerManager tManager = TrackerManager.getInstance();
+        tManager.deinitTracker(ObjectTracker.getClassType());
+
+        return result;
     }
 
     @Override
     public void onInitARDone(ARApplicationException e) {
-        initApplicationAR();
 
-        mRenderer.setActive(true);
+        if( e == null ){
 
-        setContentView(mGLView);
-//        Log.i(LOGTAG, String.format("GLView width: %d, height: %d", mGLView.getWidth(), mGLView.getHeight()));
+            initApplicationAR();
 
-        initLayouts();
+            mRenderer.setActive(true);
+
+            setContentView(mGLView);
+
+            initLayouts();
 
 //        mRenderer.getModels().add(new CubeObject());
-        testLoadModel();
+            testLoadModel();
+
+            try{
+
+                appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
+
+            }catch (ARApplicationException ex){
+                ex.printStackTrace();
+            }
+
+            boolean result = CameraDevice.getInstance().setFocusMode(
+                    CameraDevice.FOCUS_MODE.FOCUS_MODE_CONTINUOUSAUTO
+            );
+
+            if( result )
+                mContAutoFocus = true;
+            else
+                Log.e(LOGTAG, "Unable to enable continuous autofocus");
+
 
 //        addContentView(mGLView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 //                ViewGroup.LayoutParams.MATCH_PARENT));
+
+        }else {
+            e.printStackTrace();
+        }
     }
 
     private void initApplicationAR(){
+        int depthSize = 16;
+        int stencilSize = 0;
+        boolean translucent = Vuforia.requiresAlpha();
 
         mGLView = new ARGLView(this);
-//        mGLView.init()
+        mGLView.init(translucent, depthSize, stencilSize);
 
         mRenderer = new ARAppRenderer(this, appSession);
         mRenderer.setTextures(mTextures);
-
         mGLView.setRenderer(mRenderer);
+
         mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         mGLView.setZOrderMediaOverlay(true);
 
@@ -211,11 +294,27 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     @Override
     public void onVuforiaUpdate(State state) {
+        if (mSwitchDatasetAsap)
+        {
+            mSwitchDatasetAsap = false;
+            TrackerManager tm = TrackerManager.getInstance();
+            ObjectTracker ot = (ObjectTracker) tm.getTracker(ObjectTracker
+                    .getClassType());
+            if (ot == null || mCurrentDataset == null
+                    || ot.getActiveDataSet() == null)
+            {
+                Log.d(LOGTAG, "Failed to swap datasets");
+                return;
+            }
 
+            doUnloadTrackersData();
+            doLoadTrackersData();
+        }
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        Log.d(LOGTAG, "onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
 
         appSession.onConfigurationChanged();
@@ -289,4 +388,170 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         mGLView.requestRender();
     }
 
+    @Override
+    protected void onResume() {
+        Log.d(LOGTAG, "onResume");
+        super.onResume();
+
+        try{
+            appSession.resumeAR();
+        }catch (ARApplicationException ex){
+            ex.printStackTrace();
+        }
+
+        if( mGLView != null){
+            mGLView.setVisibility(View.VISIBLE);
+            mGLView.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(LOGTAG, "onPause");
+        super.onPause();
+
+        if( mGLView != null ){
+            mGLView.setVisibility(View.INVISIBLE);
+            mGLView.onPause();
+        }
+
+        try{
+            appSession.pauseAR();
+        }catch (ARApplicationException ex){
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        try{
+            appSession.stopAR();
+        }catch (ARApplicationException ex){
+            ex.printStackTrace();
+        }
+
+        mTextures.clear();
+        mTextures = null;
+
+        System.gc();
+    }
+
+
+    // Methods to load and destroy tracking data.
+    @Override
+    public boolean doLoadTrackersData()
+    {
+        TrackerManager tManager = TrackerManager.getInstance();
+        ObjectTracker objectTracker = (ObjectTracker) tManager
+                .getTracker(ObjectTracker.getClassType());
+        if (objectTracker == null)
+            return false;
+
+        if (mCurrentDataset == null)
+            mCurrentDataset = objectTracker.createDataSet();
+
+        if (mCurrentDataset == null )
+            return false;
+
+        if (!mCurrentDataset.load(
+                mDatasetStrings.get(mCurrentDatasetSelectionIndex),
+                STORAGE_TYPE.STORAGE_APPRESOURCE))
+            return false;
+
+        if (!objectTracker.activateDataSet(mCurrentDataset))
+            return false;
+
+        int numTrackables = mCurrentDataset.getNumTrackables();
+        for (int count = 0; count < numTrackables; count++)
+        {
+            Trackable trackable = mCurrentDataset.getTrackable(count);
+//            if(isExtendedTrackingActive())
+//            {
+//                trackable.startExtendedTracking();
+//            }
+
+            String name = "Current Dataset : " + trackable.getName();
+            trackable.setUserData(name);
+            Log.d(LOGTAG, "UserData:Set the following user data "
+                    + (String) trackable.getUserData());
+        }
+
+        return true;
+    }
+
+
+    @Override
+    public boolean doUnloadTrackersData()
+    {
+        // Indicate if the trackers were unloaded correctly
+        boolean result = true;
+
+        TrackerManager tManager = TrackerManager.getInstance();
+        ObjectTracker objectTracker = (ObjectTracker) tManager
+                .getTracker(ObjectTracker.getClassType());
+        if (objectTracker == null)
+            return false;
+
+        if (mCurrentDataset != null && mCurrentDataset.isActive())
+        {
+            if (objectTracker.getActiveDataSet().equals(mCurrentDataset)
+                    && !objectTracker.deactivateDataSet(mCurrentDataset))
+            {
+                result = false;
+            } else if (!objectTracker.destroyDataSet(mCurrentDataset))
+            {
+                result = false;
+            }
+
+            mCurrentDataset = null;
+        }
+
+        return result;
+    }
+
+
+    private AlertDialog mErrorDialog = null;
+    // Shows initialization error messages as System dialogs
+    public void showInitializationErrorMessage(String message)
+    {
+        final String errorMessage = message;
+        runOnUiThread(new Runnable()
+        {
+            public void run()
+            {
+                if (mErrorDialog != null)
+                {
+                    mErrorDialog.dismiss();
+                }
+
+                // Generates an Alert Dialog to show the error message
+                AlertDialog.Builder builder = new AlertDialog.Builder(
+                        ARSceneActivity.this);
+                builder
+                        .setMessage(errorMessage)
+                        .setTitle(getString(R.string.INIT_ERROR))
+                        .setCancelable(false)
+                        .setIcon(0)
+                        .setPositiveButton(getString(R.string.button_ok),
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int id)
+                                    {
+                                        finish();
+                                    }
+                                });
+
+                mErrorDialog = builder.create();
+                mErrorDialog.show();
+            }
+        });
+    }
+
+
+    private void showToast(String text)
+    {
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
 }
