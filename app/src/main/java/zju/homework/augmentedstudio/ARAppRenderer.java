@@ -44,7 +44,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         OBJECT_TRACKER, ROTATION_TRACKER
     }
 
-    private TrackerMode trackerMode = TrackerMode.ROTATION_TRACKER;
+    private TrackerMode trackerMode = TrackerMode.OBJECT_TRACKER;
 
 
     private ARApplicationSession vuforiaAppSession;
