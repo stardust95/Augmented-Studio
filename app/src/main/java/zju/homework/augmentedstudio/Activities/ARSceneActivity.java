@@ -110,7 +110,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         private float curSpan;
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
-            Log.i(LOGTAG, "ON SCALE");
+//            Log.i(LOGTAG, "ON SCALE");
             float span = detector.getCurrentSpan();
             if( span > curSpan ){       // scale up
                 mRenderer.changeScale(true);
@@ -135,12 +135,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean onTouchEvent(final MotionEvent event) {
 //        Log.i(LOGTAG, "OnTouchEvent");
         super.onTouchEvent(event);
         scaleListener.onTouchEvent(event);
-        mRenderer.handleTouchEvent(event);
 
+        mRenderer.handleTouchEvent(event);
         mGLView.requestRender();
         return true;
     }

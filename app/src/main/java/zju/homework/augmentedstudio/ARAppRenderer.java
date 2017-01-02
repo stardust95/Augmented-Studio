@@ -15,6 +15,7 @@ import com.vuforia.Trackable;
 import com.vuforia.TrackableResult;
 import com.vuforia.Vuforia;
 
+import java.nio.ByteBuffer;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -188,6 +189,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         float[] modelViewMatrix = new float[16];
         float[] mvpMatrix = new float[16];
 
+//        this.selectObject(100, 100);
+
         for(int tldx=0; tldx < state.getNumTrackableResults(); tldx++){
             TrackableResult result = state.getTrackableResult(tldx);
 
@@ -198,8 +201,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
             Trackable trackable = result.getTrackable();
 
-            printUserData(trackable);
-
+//            printUserData(trackable);
+//
             Matrix44F modelViewMatrix_Vuforia = Tool.convertPose2GLMatrix(result.getPose());
 
             if( trackerMode == TrackerMode.OBJECT_TRACKER ){
@@ -209,7 +212,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
             }
 
             Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
-            Util.printMatrix(mvpMatrix, 4);
+//            Util.printMatrix(mvpMatrix, 4);
 
             for(int i=0; i<models.size(); i++){
 
@@ -296,10 +299,10 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     private int selectIndex = 0;
 
+
     public boolean handleTouchEvent(MotionEvent event){
         float x = event.getX();
         float y = event.getY();
-
         //If a touch is moved on the screen
         if(event.getAction() == MotionEvent.ACTION_MOVE) {
             //Calculate the change
