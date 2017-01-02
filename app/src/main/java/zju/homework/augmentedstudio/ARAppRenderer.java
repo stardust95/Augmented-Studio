@@ -22,6 +22,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
 import zju.homework.augmentedstudio.Models.MeshObject;
+import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.CubeShader;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARAppRendererControl;
@@ -246,7 +247,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                 GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
                         tmpMvpMatrix, 0);
 
-                if( model instanceof MeshObject ){
+                if( model instanceof ModelObject){
                     GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0,
                             model.getNumObjectVertex());
                 }else{
@@ -378,15 +379,15 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     }
 
 
-    private static float ScaleFactor = 0.1f;
+    private static float ScaleFactor = 1f;
     public void changeScale(boolean scaleUp){
 
         if( selectIndex >= 0 && selectIndex < models.size() ){
             float scale = models.get(selectIndex).getScale();
 
-            if ( scaleUp && scale < 10 )
+            if ( scaleUp && scale < 20 )
                 scale += ScaleFactor;
-            else if( !scaleUp && scale > 1 )
+            else if( !scaleUp && scale > 5 )
                 scale -= ScaleFactor;
             models.get(selectIndex).setScale(scale);
 

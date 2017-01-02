@@ -268,6 +268,6 @@ public class ObjObject extends MeshObject{
 
     @Override
     public int getNumObjectIndex() {
-        return 0;
+        return indices.size();
     }
 }
