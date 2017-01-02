@@ -15,6 +15,8 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import zju.homework.augmentedstudio.Utils.ObjLoader;
+
 /**
  * Created by stardust on 2016/12/26.
  */
@@ -27,9 +29,6 @@ public class ModelObject extends MeshObject implements Serializable {
 
     int numVerts = 0;
 
-    public void  loadObjModel(InputStream is){
-        
-    }
 
     public void loadTextModel(AssetManager assetManager, String filename)
             throws IOException

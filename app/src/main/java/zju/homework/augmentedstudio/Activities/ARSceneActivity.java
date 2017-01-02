@@ -58,7 +58,9 @@ import zju.homework.augmentedstudio.Container.SceneData;
 import zju.homework.augmentedstudio.Container.TransformData;
 import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Models.CubeObject;
+import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
+import zju.homework.augmentedstudio.Models.ObjObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.R;
@@ -180,13 +182,18 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
 
     private String buildingFilename = "/storage/emulated/0/APK/Buildings.txt";
+    private String objFilename = "/storage/emulated/0/test.obj";
     private void testLoadModel(){
 
-        ModelObject object = new ModelObject();
+//        ModelObject object = new ModelObject();
+        ObjObject objObject = new ObjObject();
+
         try {
-            object.loadTextModel(buildingFilename);
+            objObject.loadFromFile(objFilename);
+            mRenderer.getModels().add(objObject);
+//            object.loadTextModel(buildingFilename);
 //            mRenderer.getModels().add(new CubeObject());
-            mRenderer.getModels().add(object);
+//            mRenderer.getModels().add(object);
         }catch (IOException ex){
             ex.printStackTrace();
         }
@@ -445,13 +452,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             @Override
             public void onClick(View v) {
 //                uploadScene();
-                try{
-
-                    uploadModels();
-                }catch (IOException ex){
-                    ex.printStackTrace();
-                }
-                extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
+//                try{
+//                    uploadModels();
+//                    extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
+//                }catch (IOException ex){
+//                    ex.printStackTrace();
+//                }
             }
         });
         // init spinner
@@ -643,14 +649,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         });
     }
 
-    private HashSet<ModelObject> hasUploaded = new HashSet<>();
+    private HashSet<MeshObject> hasUploaded = new HashSet<>();
     private void uploadModels() throws IOException{
         ModelsData modelsData = null;
         List<String> names = new ArrayList<>();
         List<String> datas = new ArrayList<>();
         List<TransformData> transforms = new ArrayList<>();
 
-        for(ModelObject object : mRenderer.getModels()){
+        for(MeshObject object : mRenderer.getModels()){
             if( !hasUploaded.contains(object) ){
                 names.add(object.getModelName());
                 datas.add(Util.getStringFromInputStream(new FileInputStream(object.getModelName())));
@@ -722,7 +728,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             }
 
             for(TransformData transform : modelsData.getTransforms()){
-                for(ModelObject object : mRenderer.getModels()){
+                for(MeshObject object : mRenderer.getModels()){
                     if( transform.getModelName().equals(object.getModelName()) ){
                         object.setTransform(transform);
                         Log.i(LOGTAG, "upload transform of model " + object.getModelName());

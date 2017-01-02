@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 
 import zju.homework.augmentedstudio.Container.TransformData;
 
@@ -85,7 +88,6 @@ public abstract class MeshObject
         BUFFER_TYPE_VERTEX, BUFFER_TYPE_TEXTURE_COORD, BUFFER_TYPE_NORMALS, BUFFER_TYPE_INDICES
     }
 
-
     @JsonIgnore
     public Buffer getVertices()
     {
@@ -112,7 +114,7 @@ public abstract class MeshObject
     }
 
 
-    protected Buffer fillBuffer(double[] array)
+    protected DoubleBuffer fillBuffer(double[] array)
     {
         // Convert to floats because OpenGL doesn't work on doubles, and manually
         // casting each input value would take too much time.
@@ -123,12 +125,12 @@ public abstract class MeshObject
             bb.putFloat((float) d);
         bb.rewind();
 
-        return bb;
+        return bb.asDoubleBuffer();
 
     }
 
 
-    protected Buffer fillBuffer(float[] array)
+    protected FloatBuffer fillBuffer(float[] array)
     {
         // Each float takes 4 bytes
         ByteBuffer bb = ByteBuffer.allocateDirect(4 * array.length);
@@ -137,12 +139,12 @@ public abstract class MeshObject
             bb.putFloat(d);
         bb.rewind();
 
-        return bb;
+        return bb.asFloatBuffer();
 
     }
 
 
-    protected Buffer fillBuffer(short[] array)
+    protected ShortBuffer fillBuffer(short[] array)
     {
         // Each short takes 2 bytes
         ByteBuffer bb = ByteBuffer.allocateDirect(2 * array.length);
@@ -151,7 +153,7 @@ public abstract class MeshObject
             bb.putShort(s);
         bb.rewind();
 
-        return bb;
+        return bb.asShortBuffer();
 
     }
 
