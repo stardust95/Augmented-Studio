@@ -15,7 +15,6 @@ import com.vuforia.Trackable;
 import com.vuforia.TrackableResult;
 import com.vuforia.Vuforia;
 
-import java.nio.ByteOrder;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -23,8 +22,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
 import zju.homework.augmentedstudio.Models.MeshObject;
-import zju.homework.augmentedstudio.Shaders.ObjectShader;
-import zju.homework.augmentedstudio.Models.MeshObject;
+import zju.homework.augmentedstudio.Shaders.CubeShader;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARAppRendererControl;
 import zju.homework.augmentedstudio.GL.ARBaseRenderer;
@@ -118,8 +116,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                     GLES20.GL_UNSIGNED_BYTE, t.mData);
         }
 
-        shaderProgramID = Util.createProgramFromShaderSrc(ObjectShader.CUBE_MESH_VERTEX_SHADER,
-                ObjectShader.CUBE_MESH_FRAGMENT_SHADER);
+        shaderProgramID = Util.createProgramFromShaderSrc(CubeShader.CUBE_MESH_VERTEX_SHADER,
+                CubeShader.CUBE_MESH_FRAGMENT_SHADER);
         if( shaderProgramID > 0 ){
             GLES20.glUseProgram(shaderProgramID);
             texSampler2DHandle = GLES20.glGetUniformLocation(shaderProgramID,
@@ -231,21 +229,19 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                 GLES20.glUseProgram(shaderProgramID);
                 GLES20.glVertexAttribPointer(vertexHandle, 3, GLES20.GL_FLOAT,
                         false, 0, model.getVertices());
-                if( model.getTexCoords() != null )
-                    GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
-                            false, 0, model.getTexCoords());
+                GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
+                        false, 0, model.getTexCoords());
 
                 GLES20.glEnableVertexAttribArray(vertexHandle);
 
-                if( model.getTexCoords() != null ){
 
-                    GLES20.glEnableVertexAttribArray(textureCoordHandle);
+                GLES20.glEnableVertexAttribArray(textureCoordHandle);
 
-                    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
-                            mTextures.get(i).mTextureID[0]);
-                    GLES20.glUniform1i(texSampler2DHandle, 0);
-                }
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
+                        mTextures.get(i).mTextureID[0]);
+                GLES20.glUniform1i(texSampler2DHandle, 0);
+
 
                 GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
                         tmpMvpMatrix, 0);

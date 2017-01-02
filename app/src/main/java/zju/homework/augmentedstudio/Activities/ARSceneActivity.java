@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -66,6 +67,7 @@ import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.R;
 import zju.homework.augmentedstudio.Utils.ARApplicationException;
 import zju.homework.augmentedstudio.Utils.NetworkManager;
+import zju.homework.augmentedstudio.Utils.ResourceLoader;
 import zju.homework.augmentedstudio.Utils.Util;
 
 public class ARSceneActivity extends Activity implements ARApplicationControl, AdapterView.OnItemSelectedListener{
@@ -186,17 +188,19 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     private void testLoadModel(){
 
 //        ModelObject object = new ModelObject();
-        ObjObject objObject = new ObjObject();
+//        ObjObject objObject = new ObjObject();
+        ResourceLoader loader = ResourceLoader.getResourceLoader();
+        loader.loadObjObject("object", objFilename);
+        ObjObject objObject = loader.getObjObjectByName("object");
+        mRenderer.getModels().add(objObject);
+//        try {
 
-        try {
-            objObject.loadFromFile(objFilename);
-            mRenderer.getModels().add(objObject);
 //            object.loadTextModel(buildingFilename);
 //            mRenderer.getModels().add(new CubeObject());
 //            mRenderer.getModels().add(object);
-        }catch (IOException ex){
-            ex.printStackTrace();
-        }
+//        }catch (IOException ex){
+//            ex.printStackTrace();
+//        }
 
         return;
     }

@@ -1,10 +1,12 @@
 package zju.homework.augmentedstudio.Shaders;
 
 /**
- * Created by stardust on 2017/1/2.
+ * Created by stardust on 2016/12/24.
  */
 
-public class ObjectShader {
+
+public class CubeShader
+{
 
     public static final String CUBE_MESH_VERTEX_SHADER = " \n" + "\n"
             + "attribute vec4 vertexPosition; \n"
@@ -25,4 +27,5 @@ public class ObjectShader {
 //            + "   gl_FragColor = texture2D(texSampler2D, texCoord); \n"
             + "   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); \n"
             + "} \n";
+
 }

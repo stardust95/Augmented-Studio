@@ -3,7 +3,6 @@ package zju.homework.augmentedstudio.Models;
 import android.content.res.AssetManager;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -14,8 +13,6 @@ import java.io.Serializable;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import zju.homework.augmentedstudio.Utils.ObjLoader;
 
 /**
  * Created by stardust on 2016/12/26.
