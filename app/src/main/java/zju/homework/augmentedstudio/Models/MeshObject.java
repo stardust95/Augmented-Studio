@@ -11,6 +11,7 @@ import java.nio.ByteOrder;
 
 public abstract class MeshObject
 {
+
     private final float[] defaultAmbient = new float[]{ 0.2f, 0.2f, 0.2f };
     private final float[] defaultSpecular = new float[]{ 0, 0, 0 };
     private final float[] defaultDiffuse = new float[]{ 0.8f, 0.8f, 0.8f };
@@ -18,6 +19,8 @@ public abstract class MeshObject
     private final float[] selectedAmbient = new float[]{ 1f, 0f, 0f };
     private final float[] selectedSpecular = new float[]{ 1f, 0f, 0f };
     private final float[] selectedDiffuse = new float[]{ 1f, 0f, 0f };
+
+    protected String modelName;
 
     protected float height, width;
 
@@ -152,12 +155,18 @@ public abstract class MeshObject
     public abstract int getNumObjectIndex();
 
     public Transform getTransform(){
-        return new Transform(position, rotation, scale);
+        return new Transform(this.modelName, position, rotation, scale);
     }
 
     public void setTransform(Transform transform){
+//        if( !transform.getModelName().equals(this.modelName) )
+            
         position = transform.position.clone();
         rotation = transform.rotation.clone();
         scale = transform.scale;
+    }
+
+    public String getModelName() {
+        return modelName;
     }
 }

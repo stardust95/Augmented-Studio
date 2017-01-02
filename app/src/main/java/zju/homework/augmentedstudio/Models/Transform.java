@@ -6,14 +6,17 @@ package zju.homework.augmentedstudio.Models;
 
 public class Transform {
 
+    public String modelName;
+
     public float[] position = new float[3];
     public float[] rotation = new float[3];
     public float scale = 5f;
 
-    public Transform(float[] position, float[] rotation, float scale) {
+    public Transform(String name, float[] position, float[] rotation, float scale) {
         this.position = position;
         this.rotation = rotation;
         this.scale = scale;
+        this.modelName = name;
     }
 
     public float[] getPosition() {
@@ -38,5 +41,13 @@ public class Transform {
 
     public void setScale(float scale) {
         this.scale = scale;
+    }
+
+    public String getModelName() {
+        return modelName;
+    }
+
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
     }
 }

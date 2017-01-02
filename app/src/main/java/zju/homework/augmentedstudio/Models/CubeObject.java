@@ -88,6 +88,7 @@ public class CubeObject extends MeshObject
 
     public CubeObject()
     {
+        modelName = "CubeObject";
         mVertBuff = fillBuffer(cubeVertices);
         mTexCoordBuff = fillBuffer(cubeTexcoords);
         mNormBuff = fillBuffer(cubeNormals);

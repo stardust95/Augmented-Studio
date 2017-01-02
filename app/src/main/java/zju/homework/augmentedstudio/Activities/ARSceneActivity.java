@@ -45,11 +45,14 @@ import zju.homework.augmentedstudio.ARAppRenderer;
 import zju.homework.augmentedstudio.ARApplicationSession;
 import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Models.CubeObject;
+import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
+import zju.homework.augmentedstudio.Models.Transform;
 import zju.homework.augmentedstudio.R;
 import zju.homework.augmentedstudio.Utils.ARApplicationException;
+import zju.homework.augmentedstudio.Utils.NetworkManager;
 
 public class ARSceneActivity extends Activity implements ARApplicationControl, AdapterView.OnItemSelectedListener{
 
@@ -61,6 +64,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     private ARApplicationSession appSession;
 
+    private NetworkManager networkManager = new NetworkManager();
     // View overlays to be displayed in the Augmented View
     private RelativeLayout mUILayout;
     private View mBottomBar;
@@ -563,6 +567,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 
 
+
     private AlertDialog mErrorDialog = null;
     // Shows initialization error messages as System dialogs
     public void showInitializationErrorMessage(String message)
@@ -600,9 +605,24 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         });
     }
 
+    private void uploadScene(){ // upload track image(xml) and models with their transforms to server
+        String imageName = mDatasetStrings.get(mCurrentDatasetSelectionIndex);
+
+        MeshObject[] objectsArray = null;
+        objectsArray = mRenderer.getModels().toArray(objectsArray);
+
+
+    }
+
+    private void uploadTransforms(){ // only upload transforms to server
+
+    }
+
 
     private void showToast(String text)
     {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
 }
+
+

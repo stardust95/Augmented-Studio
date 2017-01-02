@@ -16,7 +16,6 @@ import java.nio.ByteOrder;
 
 public class ModelObject extends MeshObject {
 
-
     private ByteBuffer verts;
     private ByteBuffer textCoords;
     private ByteBuffer norms;
@@ -30,6 +29,8 @@ public class ModelObject extends MeshObject {
         try
         {
             is = assetManager.open(filename);
+            modelName = filename.lastIndexOf('\\') >= 0 ? filename.substring(filename.lastIndexOf('\\')) : filename;
+
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(is));
 
@@ -96,13 +97,11 @@ public class ModelObject extends MeshObject {
         return result;
     }
 
-
     @Override
     public int getNumObjectVertex()
     {
         return numVerts;
     }
-
 
     @Override
     public int getNumObjectIndex()
