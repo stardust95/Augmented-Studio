@@ -1,10 +1,10 @@
-package zju.homework.augmentedstudio.Models;
+package zju.homework.augmentedstudio.Container;
 
 /**
  * Created by stardust on 2017/1/2.
  */
 
-public class Transform {
+public class TransformData {
 
     public String modelName;
 
@@ -12,7 +12,10 @@ public class Transform {
     public float[] rotation = new float[3];
     public float scale = 5f;
 
-    public Transform(String name, float[] position, float[] rotation, float scale) {
+    public TransformData() {
+    }
+
+    public TransformData(String name, float[] position, float[] rotation, float scale) {
         this.position = position;
         this.rotation = rotation;
         this.scale = scale;

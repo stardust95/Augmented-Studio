@@ -4,9 +4,14 @@ package zju.homework.augmentedstudio.Models;
  * Created by stardust on 2016/12/24.
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import zju.homework.augmentedstudio.Container.TransformData;
+
 
 
 public abstract class MeshObject
@@ -81,24 +86,26 @@ public abstract class MeshObject
     }
 
 
+    @JsonIgnore
     public Buffer getVertices()
     {
         return getBuffer(BUFFER_TYPE.BUFFER_TYPE_VERTEX);
     }
 
 
+    @JsonIgnore
     public Buffer getTexCoords()
     {
         return getBuffer(BUFFER_TYPE.BUFFER_TYPE_TEXTURE_COORD);
     }
 
-
+    @JsonIgnore
     public Buffer getNormals()
     {
         return getBuffer(BUFFER_TYPE.BUFFER_TYPE_NORMALS);
     }
 
-
+    @JsonIgnore
     public Buffer getIndices()
     {
         return getBuffer(BUFFER_TYPE.BUFFER_TYPE_INDICES);
@@ -154,11 +161,11 @@ public abstract class MeshObject
 
     public abstract int getNumObjectIndex();
 
-    public Transform getTransform(){
-        return new Transform(this.modelName, position, rotation, scale);
+    public final TransformData getTransform(){
+        return new TransformData(this.modelName, position, rotation, scale);
     }
 
-    public void setTransform(Transform transform){
+    public void setTransform(TransformData transform){
 //        if( !transform.getModelName().equals(this.modelName) )
 
         position = transform.position.clone();

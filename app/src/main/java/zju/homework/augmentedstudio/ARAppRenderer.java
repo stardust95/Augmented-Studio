@@ -15,6 +15,7 @@ import com.vuforia.Trackable;
 import com.vuforia.TrackableResult;
 import com.vuforia.Vuforia;
 
+import java.nio.ByteOrder;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -23,7 +24,7 @@ import javax.microedition.khronos.opengles.GL10;
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.ObjectShader;
-import zju.homework.augmentedstudio.Models.MeshObject;
+import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARAppRendererControl;
 import zju.homework.augmentedstudio.GL.ARBaseRenderer;
@@ -52,7 +53,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     private boolean mIsActive = false;
 
-    private Vector<MeshObject> models;
+    private Vector<ModelObject> models;
 
     private Vector<Texture> mTextures = null;
     private int shaderProgramID;
@@ -71,7 +72,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     // Reference to main activity
     private ARSceneActivity mActivity;
 
-    MeshObject cube;
+    ModelObject cube;
 
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mLookatMatrix = new float[]{
@@ -215,7 +216,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
             for(int i=0; i<models.size(); i++){
 
-                MeshObject model = models.get(i);
+                ModelObject model = models.get(i);
                 float scale = model.getScale();
                 float[] position = model.getPosition();
                 float[] rotation = model.getRotation();
@@ -228,7 +229,6 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                 Matrix.translateM(tmpMvpMatrix, 0, position[0], position[1], position[2]);
 
                 GLES20.glUseProgram(shaderProgramID);
-
                 GLES20.glVertexAttribPointer(vertexHandle, 3, GLES20.GL_FLOAT,
                         false, 0, model.getVertices());
 
@@ -410,7 +410,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         mode = s;
     }
 
-    public Vector<MeshObject> getModels() {
+    public Vector<ModelObject> getModels() {
         return models;
     }
 

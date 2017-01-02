@@ -2,10 +2,15 @@ package zju.homework.augmentedstudio.Models;
 
 import android.content.res.AssetManager;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,24 +18,38 @@ import java.nio.ByteOrder;
 /**
  * Created by stardust on 2016/12/26.
  */
-
-public class ModelObject extends MeshObject {
+//@JsonIgnoreProperties(ignoreUnknown = true)
+public class ModelObject extends MeshObject implements Serializable {
 
     private ByteBuffer verts;
     private ByteBuffer textCoords;
     private ByteBuffer norms;
+
     int numVerts = 0;
 
+    public void  loadObjModel(InputStream is){
+        
+    }
 
     public void loadTextModel(AssetManager assetManager, String filename)
             throws IOException
     {
         InputStream is = null;
-        try
-        {
-            is = assetManager.open(filename);
-            modelName = filename.lastIndexOf('\\') >= 0 ? filename.substring(filename.lastIndexOf('\\')) : filename;
 
+        is = assetManager.open(filename);
+        modelName = filename;
+//        modelName = filename.lastIndexOf('\\') >= 0 ? filename.substring(filename.lastIndexOf('\\')) : filename;
+
+        loadTextModel(is);
+    }
+
+    public void loadTextModel(String filename) throws IOException{
+        modelName = filename;
+        loadTextModel(new FileInputStream(filename));
+    }
+
+    public void loadTextModel(InputStream is) throws IOException{
+        try{
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(is));
 
@@ -69,8 +88,7 @@ public class ModelObject extends MeshObject {
             }
             textCoords.rewind();
 
-        } finally
-        {
+        }finally{
             if (is != null)
                 is.close();
         }
@@ -84,28 +102,75 @@ public class ModelObject extends MeshObject {
         switch (bufferType)
         {
             case BUFFER_TYPE_VERTEX:
+                if( verts.order() != ByteOrder.nativeOrder() )
+                    verts = verts.order(ByteOrder.nativeOrder());
                 result = verts;
                 break;
             case BUFFER_TYPE_TEXTURE_COORD:
+                if( textCoords.order() != ByteOrder.nativeOrder() )
+                    textCoords = textCoords.order(ByteOrder.nativeOrder());
                 result = textCoords;
                 break;
             case BUFFER_TYPE_NORMALS:
+                if( norms.order() != ByteOrder.nativeOrder() )
+                    norms = norms.order(ByteOrder.nativeOrder());
                 result = norms;
             default:
                 break;
         }
+
         return result;
     }
 
+    @JsonIgnore
     @Override
     public int getNumObjectVertex()
     {
         return numVerts;
     }
 
+    @JsonIgnore
     @Override
     public int getNumObjectIndex()
     {
         return 0;
+    }
+
+    public ByteBuffer getVerts() {
+        if( verts.order() != ByteOrder.nativeOrder() )
+            verts = verts.order(ByteOrder.nativeOrder());
+        return verts;
+    }
+
+    public void setVerts(ByteBuffer verts) {
+        this.verts = verts;
+    }
+
+    public ByteBuffer getTextCoords() {
+        if( textCoords.order() != ByteOrder.nativeOrder() )
+            textCoords = textCoords.order(ByteOrder.nativeOrder());
+        return textCoords;
+    }
+
+    public void setTextCoords(ByteBuffer textCoords) {
+        this.textCoords = textCoords;
+    }
+
+    public ByteBuffer getNorms() {
+        if( norms.order() != ByteOrder.nativeOrder() )
+            norms = norms.order(ByteOrder.nativeOrder());
+        return norms;
+    }
+
+    public void setNorms(ByteBuffer norms) {
+        this.norms = norms;
+    }
+
+    public int getNumVerts() {
+        return numVerts;
+    }
+
+    public void setNumVerts(int numVerts) {
+        this.numVerts = numVerts;
     }
 }

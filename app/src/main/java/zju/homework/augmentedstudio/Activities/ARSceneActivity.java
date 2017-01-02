@@ -10,7 +10,6 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -28,6 +27,7 @@ import android.widget.Toast;
 
 import com.vuforia.CameraDevice;
 import com.vuforia.DataSet;
+
 import com.vuforia.ObjectTracker;
 import com.vuforia.RotationalDeviceTracker;
 import com.vuforia.STORAGE_TYPE;
@@ -37,22 +37,34 @@ import com.vuforia.Tracker;
 import com.vuforia.TrackerManager;
 import com.vuforia.Vuforia;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Vector;
 
 import zju.homework.augmentedstudio.ARAppRenderer;
 import zju.homework.augmentedstudio.ARApplicationSession;
+import zju.homework.augmentedstudio.Container.ImageTargetData;
+import zju.homework.augmentedstudio.Container.ModelsData;
+import zju.homework.augmentedstudio.Container.SceneData;
+import zju.homework.augmentedstudio.Container.TransformData;
 import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Models.CubeObject;
-import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
-import zju.homework.augmentedstudio.Models.Transform;
 import zju.homework.augmentedstudio.R;
 import zju.homework.augmentedstudio.Utils.ARApplicationException;
 import zju.homework.augmentedstudio.Utils.NetworkManager;
+import zju.homework.augmentedstudio.Utils.Util;
 
 public class ARSceneActivity extends Activity implements ARApplicationControl, AdapterView.OnItemSelectedListener{
 
@@ -82,19 +94,30 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     private int mCurrentDatasetSelectionIndex = 0;
     private DataSet mCurrentDataset;
 
-    private ArrayList<String> mDatasetStrings = new ArrayList<String>();
 
     private boolean mSwitchDatasetAsap = false;
     private boolean mContAutoFocus = false;
 
     private ScaleGestureDetector scaleListener;
+
+    private String userid;
+
+    private String groupId;
+
+    private ArrayList<String> mDatasetStrings = new ArrayList<String>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mDatasetStrings.add("target_images.xml");
+//        mDatasetStrings.add("target_images.xml");
 //        mDatasetStrings.add("StonesAndChips.xml");
 //        mDatasetStrings.add("Tarmac.xml");
+        Bundle bundle = getIntent().getExtras();
+
+        mDatasetStrings = bundle.getStringArrayList("dataset");
+        groupId = bundle.getString("group");
+        userid = bundle.getString("user");
 
         appSession = new ARApplicationSession(this);
 
@@ -106,8 +129,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
         scaleListener = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());
 
-        spinnerArray.add("Cube");
-        spinnerArray.add("Buildings");
+//        spinnerArray.add("Cube");
+//        spinnerArray.add("Buildings");
 //        spinnerArray.add("Camera");
     }
 
@@ -155,12 +178,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         mTextures.add(Texture.loadTextureFromApk("Buildings.jpeg", getAssets()));
     }
 
+
+    private String buildingFilename = "/storage/emulated/0/APK/Buildings.txt";
     private void testLoadModel(){
 
         ModelObject object = new ModelObject();
         try {
-            object.loadTextModel(this.getAssets(), "Buildings.txt");
-            mRenderer.getModels().add(new CubeObject());
+            object.loadTextModel(buildingFilename);
+//            mRenderer.getModels().add(new CubeObject());
             mRenderer.getModels().add(object);
         }catch (IOException ex){
             ex.printStackTrace();
@@ -387,12 +412,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     private ArrayList<String> spinnerArray = null;          // must use this theme
 
     private void initLayouts(){
-        String[] buttonTexts = new String[]{ "Rotate", "Transform" };
+        String[] buttonTexts = new String[]{ "Rotate", "TransforM", "Test" };
         LinearLayout ll = new LinearLayout(this);
         ll.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
         ll.setBackgroundColor(Color.WHITE);
 
-        final Button[] buttons = new Button[2];
+        final Button[] buttons = new Button[buttonTexts.length];
         for(int i=0; i<buttons.length; i++){
             buttons[i] = new Button(this);
             buttons[i].setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1f));
@@ -416,7 +441,19 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             ll.addView(buttons[i]);
         }
         buttons[1].setEnabled(false);       // default is transform mode
+        buttons[2].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                uploadScene();
+                try{
 
+                    uploadModels();
+                }catch (IOException ex){
+                    ex.printStackTrace();
+                }
+                extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
+            }
+        });
         // init spinner
         spinner = new Spinner(this);
         spinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -606,13 +643,98 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         });
     }
 
+    private HashSet<ModelObject> hasUploaded = new HashSet<>();
+    private void uploadModels() throws IOException{
+        ModelsData modelsData = null;
+        List<String> names = new ArrayList<>();
+        List<String> datas = new ArrayList<>();
+        List<TransformData> transforms = new ArrayList<>();
+
+        for(ModelObject object : mRenderer.getModels()){
+            if( !hasUploaded.contains(object) ){
+                names.add(object.getModelName());
+                datas.add(Util.getStringFromInputStream(new FileInputStream(object.getModelName())));
+                transforms.add(object.getTransform());
+                hasUploaded.add(object);
+            }
+        }
+
+        modelsData = new ModelsData(groupId,
+                names.toArray(new String[0]),
+                datas.toArray(new String[0]),
+                transforms.toArray(new TransformData[0]));
+        try{
+            String filepath = this.getCacheDir() + "/" + "time" + ".models";
+            FileOutputStream saveFile = new FileOutputStream(filepath);
+
+            saveFile.write(Util.objectToJson(modelsData).getBytes());
+
+            Log.i(LOGTAG, "saved scene in " + filepath);
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+
+    }
+
     private void uploadScene(){ // upload track image(xml) and models with their transforms to server
-        String imageName = mDatasetStrings.get(mCurrentDatasetSelectionIndex);
 
-        MeshObject[] objectsArray = null;
-        objectsArray = mRenderer.getModels().toArray(objectsArray);
+        SceneData sceneData = null;
 
+//        String imageName = mDatasetStrings.get(mCurrentDatasetSelectionIndex);
+        String xmlName = "StonesAndChips.xml";
+        String datName = "StonesAndChips.dat";
 
+//        mRenderer.getModels().toArray(objectsArray);        // fill array
+
+        try{
+            sceneData = new SceneData(groupId, "demouser",
+                    new ImageTargetData(Util.getStringFromInputStream(getAssets().open(xmlName)),
+                            Util.inputStreamToBase64(getAssets().open(datName))));
+
+            String filepath = this.getCacheDir() + "/" + "time" + ".scene";
+            FileOutputStream saveFile = new FileOutputStream(filepath);
+            saveFile.write(Util.objectToJson(sceneData).getBytes());
+            Log.i(LOGTAG, "saved scene in " + filepath);
+//            String result = networkManager.postJson(Util.URL_GROUP, Util.objectToJson(sceneData));
+//
+//            if( result != null ){
+//                Log.i(LOGTAG, result);
+//            }
+
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+
+    }
+
+    private void extractModels(String filename){
+        try{
+            String jsondata = Util.getStringFromInputStream(new FileInputStream(filename));
+            ModelsData modelsData = (ModelsData) Util.jsonToObject(jsondata, ModelsData.class);
+
+//            String[] modelNames = modelsData.getModelName();
+
+            for(int i=0; i<modelsData.getModelData().length; i++){       // if has any new models
+                ModelObject object = new ModelObject();
+                object.loadTextModel(Util.stringToInputStream(modelsData.getModelData()[i]));
+                hasUploaded.add(object);
+                mRenderer.getModels().add(object);
+            }
+
+            for(TransformData transform : modelsData.getTransforms()){
+                for(ModelObject object : mRenderer.getModels()){
+                    if( transform.getModelName().equals(object.getModelName()) ){
+                        object.setTransform(transform);
+                        Log.i(LOGTAG, "upload transform of model " + object.getModelName());
+                        break;
+                    }
+                }
+            }
+
+            Log.i(LOGTAG, "Updated Models from server");
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
     }
 
     private void uploadTransforms(){ // only upload transforms to server
@@ -626,8 +748,3 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 }
 
-class SceneData{
-    String targetName;
-    String targetXML;
-
-}

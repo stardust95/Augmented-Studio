@@ -13,12 +13,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
@@ -40,6 +42,7 @@ public class Util {
 
     static {
         mapper = new ObjectMapper();
+        mapper.addMixIn(ByteBuffer.class, ByteBufferMixin.class);
 //        mapper.enable(SerializationFeature.INDENT_OUTPUT);
 //        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
@@ -90,6 +93,10 @@ public class Util {
         is.close();
         br.close();
         return sb.toString();
+    }
+
+    public static InputStream stringToInputStream(String str){
+        return new ByteArrayInputStream(str.getBytes());
     }
 
     public static String inputStreamToBase64(InputStream is){
