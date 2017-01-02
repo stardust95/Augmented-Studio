@@ -145,13 +145,19 @@ public abstract class MeshObject
 
     }
 
-
     public abstract Buffer getBuffer(BUFFER_TYPE bufferType);
-
 
     public abstract int getNumObjectVertex();
 
-
     public abstract int getNumObjectIndex();
 
+    public Transform getTransform(){
+        return new Transform(position, rotation, scale);
+    }
+
+    public void setTransform(Transform transform){
+        position = transform.position.clone();
+        rotation = transform.rotation.clone();
+        scale = transform.scale;
+    }
 }

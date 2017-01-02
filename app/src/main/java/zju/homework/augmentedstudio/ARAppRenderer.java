@@ -15,7 +15,6 @@ import com.vuforia.Trackable;
 import com.vuforia.TrackableResult;
 import com.vuforia.Vuforia;
 
-import java.nio.ByteBuffer;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -23,7 +22,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
 import zju.homework.augmentedstudio.Models.ModelObject;
-import zju.homework.augmentedstudio.Shaders.CubeShaders;
+import zju.homework.augmentedstudio.Shaders.ObjectShader;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARAppRendererControl;
@@ -118,8 +117,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                     GLES20.GL_UNSIGNED_BYTE, t.mData);
         }
 
-        shaderProgramID = Util.createProgramFromShaderSrc(CubeShaders.CUBE_MESH_VERTEX_SHADER,
-                CubeShaders.CUBE_MESH_FRAGMENT_SHADER);
+        shaderProgramID = Util.createProgramFromShaderSrc(ObjectShader.CUBE_MESH_VERTEX_SHADER,
+                ObjectShader.CUBE_MESH_FRAGMENT_SHADER);
         if( shaderProgramID > 0 ){
             GLES20.glUseProgram(shaderProgramID);
             texSampler2DHandle = GLES20.glGetUniformLocation(shaderProgramID,

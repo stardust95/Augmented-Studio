@@ -1,7 +1,27 @@
 package zju.homework.augmentedstudio.Utils;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.opengl.GLES20;
+import android.os.Build;
+import android.support.annotation.NonNull;
+import android.util.Base64;
 import android.util.Log;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Random;
 
 /**
  * Created by stardust on 2016/12/12.
@@ -11,6 +31,146 @@ public class Util {
 
     private static final String LOGTAG = "SampleUtils";
 
+    private static final String HOST = "http://222.205.46.130:3000";
+    public static final String URL_ACCOUNT = HOST + "/accounts";
+    public static final String URL_ANNOTATION = HOST + "/annotations";
+    public static final String URL_GROUP = HOST + "/groups";
+
+    private static ObjectMapper mapper;
+
+    static {
+        mapper = new ObjectMapper();
+//        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+//        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
+
+    public static final int REQUEST_OPEN_DOCUMENT = 1;
+    public static final int REQUEST_ASK_FOR_PERMISSION = 2;
+    public static final int REQUEST_LOGIN = 3;
+    public static final int REQUEST_CREATE_GROUP = 4;
+
+
+    public static void showOpenFileDialog(@NonNull Activity activity, int requestCode){
+        Intent intent = new Intent(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ?
+                Intent.ACTION_OPEN_DOCUMENT : Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+
+        activity.startActivityForResult(intent, requestCode);
+
+    }
+
+    public static byte[] getBytesFromInputStream(InputStream is) throws IOException{
+        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+
+        // this is storage overwritten on each iteration with bytes
+        int bufferSize = 1024;
+        byte[] buffer = new byte[bufferSize];
+
+        // we need to know how may bytes were read to write them to the byteBuffer
+        int len = 0;
+        while ((len = is.read(buffer)) != -1) {
+            byteBuffer.write(buffer, 0, len);
+        }
+
+        // and then we can return your byte array.
+        return byteBuffer.toByteArray();
+    }
+
+    public static String getStringFromInputStream(InputStream is) throws IOException{
+
+        StringBuilder sb = new StringBuilder();
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        String line = null;
+
+        while ( (line = br.readLine()) != null ){
+            sb.append(line);
+        }
+
+        is.close();
+        br.close();
+        return sb.toString();
+    }
+
+    public static String inputStreamToBase64(InputStream is){
+        byte[] bytes = null;
+        try{
+            bytes = getBytesFromInputStream(is);
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+        return new String(Base64.encode(bytes, Base64.DEFAULT));
+
+    }
+
+    public static Uri base64ToFile(String base64str, File tmpFile){
+        try{
+            FileOutputStream fout = new FileOutputStream(tmpFile);
+            fout.write(Base64.decode(base64str, Base64.DEFAULT));
+            fout.close();
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+        return Uri.fromFile(tmpFile);
+    }
+
+    //获取当前时间
+    public static String getTime() {
+        Date now = new Date();
+        return getTimeSimple(now);
+    }
+
+    public static String getTimeSimple(Date date){
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        return dateFormat.format(date);
+    }
+
+    public static String objectToJson(Object obj){
+        try{
+            return mapper.writeValueAsString(obj);
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    public static Object jsonToObject(String json, Class cls){
+        try{
+            Object obj = mapper.readValue(json, cls);
+//            Log.v(LOG_TAG, "content = " + json);
+            return obj;
+        }
+        catch (IOException ex){
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+
+    public static Object jsonToObject(String json, TypeReference type){
+        try{
+            Object obj = mapper.readValue(json, type);
+            Log.v(LOGTAG, "content = " + json);
+            return obj;
+        }
+        catch (IOException ex){
+            ex.printStackTrace();
+            return null;
+        }
+    }
+    public static int randInt(int min, int max) {
+
+        Random rand = new Random();
+
+        // nextInt is normally exclusive of the top value,
+        // so add 1 to make it inclusive
+        int randomNum = rand.nextInt((max - min) + 1) + min;
+
+        return randomNum;
+    }
+
+    /********************************* GL utils *************************************/
 
     static int initShader(int shaderType, String source)
     {

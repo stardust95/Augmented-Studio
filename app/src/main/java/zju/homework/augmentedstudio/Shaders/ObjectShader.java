@@ -5,7 +5,7 @@ package zju.homework.augmentedstudio.Shaders;
  */
 
 
-public class CubeShaders
+public class ObjectShader
 {
 
     public static final String CUBE_MESH_VERTEX_SHADER = " \n" + "\n"
