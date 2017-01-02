@@ -160,7 +160,7 @@ public abstract class MeshObject
 
     public void setTransform(Transform transform){
 //        if( !transform.getModelName().equals(this.modelName) )
-            
+
         position = transform.position.clone();
         rotation = transform.rotation.clone();
         scale = transform.scale;

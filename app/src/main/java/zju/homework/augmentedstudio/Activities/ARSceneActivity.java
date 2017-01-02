@@ -92,8 +92,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mDatasetStrings.add("StonesAndChips.xml");
-        mDatasetStrings.add("Tarmac.xml");
+        mDatasetStrings.add("target_images.xml");
+//        mDatasetStrings.add("StonesAndChips.xml");
+//        mDatasetStrings.add("Tarmac.xml");
 
         appSession = new ARApplicationSession(this);
 
@@ -625,4 +626,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 }
 
+class SceneData{
+    String targetName;
+    String targetXML;
 
+}

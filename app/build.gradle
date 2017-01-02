@@ -17,6 +17,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    packagingOptions{
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
+    }
 }
 
 dependencies {
@@ -27,7 +31,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.0.0'
     testCompile 'junit:junit:4.12'
     compile files('src/main/libs/Vuforia.jar')
-    compile files('src/main/libs/jackson-annotations-2.8.1.jar')
-    compile files('src/main/libs/jackson-core-2.8.1.jar')
-    compile files('src/main/libs/jackson-databind-2.8.1.jar')
+    compile files('libs/jackson-annotations-2.8.1.jar')
+    compile files('libs/jackson-core-2.8.1.jar')
+    compile files('libs/jackson-databind-2.8.1.jar')
 }
