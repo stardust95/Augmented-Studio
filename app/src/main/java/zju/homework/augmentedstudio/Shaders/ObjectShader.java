@@ -49,6 +49,8 @@ public class ObjectShader {
             "    diffuse = diffuse * (1.0/ (1.0 + (0.10 * distance)));\n" +
             "    diffuse = diffuse + 0.3;\n" +
             "\n" +
-            "    gl_FragColor = (v_Color * diffuse * texture2D(u_Texture, v_TexCoordinate));\n" +
+//            "    gl_FragColor = (v_Color * diffuse * texture2D(u_Texture, v_TexCoordinate));\n" +
+//            "    gl_FragColor = (v_Color * texture2D(u_Texture, v_TexCoordinate));\n" +
+            "    gl_FragColor = texture2D(u_Texture, v_TexCoordinate);\n" +
             "}";
 }

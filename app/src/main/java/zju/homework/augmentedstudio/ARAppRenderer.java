@@ -427,6 +427,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
     }
 
+
+
     private void printUserData(Trackable trackable)
     {
         String userData = (String) trackable.getUserData();

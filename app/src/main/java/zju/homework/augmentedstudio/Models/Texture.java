@@ -19,7 +19,7 @@ import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.util.Log;
 
-import zju.homework.augmentedstudio.Utils.DDSReader;
+import zju.homework.augmentedstudio.Utils.Tools.DDSReader;
 
 
 // Support class for the Vuforia samples applications.

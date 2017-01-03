@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -38,18 +37,12 @@ import com.vuforia.Tracker;
 import com.vuforia.TrackerManager;
 import com.vuforia.Vuforia;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Vector;
 
 import zju.homework.augmentedstudio.ARAppRenderer;
 import zju.homework.augmentedstudio.ARApplicationSession;
@@ -58,16 +51,15 @@ import zju.homework.augmentedstudio.Container.ModelsData;
 import zju.homework.augmentedstudio.Container.SceneData;
 import zju.homework.augmentedstudio.Container.TransformData;
 import zju.homework.augmentedstudio.GL.ARGLView;
-import zju.homework.augmentedstudio.Models.CubeObject;
+import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.ObjObject;
-import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.R;
 import zju.homework.augmentedstudio.Utils.ARApplicationException;
 import zju.homework.augmentedstudio.Utils.NetworkManager;
-import zju.homework.augmentedstudio.Utils.ResourceLoader;
+import zju.homework.augmentedstudio.Utils.Tools.ResourceLoader;
 import zju.homework.augmentedstudio.Utils.Util;
 
 public class ARSceneActivity extends Activity implements ARApplicationControl, AdapterView.OnItemSelectedListener{
@@ -91,9 +83,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     // Our renderer:
     private ARAppRenderer mRenderer;
-
-    // The textures we will use for rendering:
-    private Vector<Texture> mTextures;
 
     private int mCurrentDatasetSelectionIndex = 0;
     private DataSet mCurrentDataset;
@@ -128,8 +117,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         appSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         spinnerArray = new ArrayList<>();
-        mTextures = new Vector<Texture>();
-        loadTextures();
 
         scaleListener = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());
 
@@ -175,11 +162,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         mRenderer.handleTouchEvent(event);
         mGLView.requestRender();
         return true;
-    }
-
-    private void loadTextures(){
-//        mTextures.add(Texture.loadTextureFromApk("texture.bmp", getAssets()));
-//        mTextures.add(Texture.loadTextureFromApk("Buildings.jpeg", getAssets()));
     }
 
     private String buildingFilename = "/storage/emulated/0/APK/Buildings.txt";
@@ -324,7 +306,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         mGLView.init(translucent, depthSize, stencilSize);
 
         mRenderer = new ARAppRenderer(this, appSession);
-        mRenderer.setTextures(mTextures);
+
         mGLView.setRenderer(mRenderer);
 
         mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -524,8 +506,11 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             ex.printStackTrace();
         }
 
-        mTextures.clear();
-        mTextures = null;
+        for(MeshObject object : mRenderer.getModels()){
+            for(Material material : object.getMaterials()){
+                object.setMaterials(null);
+            }
+        }
 
         System.gc();
     }

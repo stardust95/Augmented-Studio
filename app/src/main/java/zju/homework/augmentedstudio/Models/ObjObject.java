@@ -1,9 +1,7 @@
 package zju.homework.augmentedstudio.Models;
 
-import android.opengl.GLES20;
 import android.util.Log;
 
-import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -13,7 +11,7 @@ import java.util.List;
 
 //import zju.homework.augmentedstudio.Utils.GeomBuilder;
 //import zju.homework.augmentedstudio.Utils.ObjReader;
-import zju.homework.augmentedstudio.Utils.Vertex;
+import zju.homework.augmentedstudio.Utils.Tools.Vertex;
 
 /**
  * Created by stardust on 2017/1/2.

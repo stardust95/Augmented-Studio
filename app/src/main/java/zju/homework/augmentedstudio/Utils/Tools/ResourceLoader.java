@@ -1,4 +1,4 @@
-package zju.homework.augmentedstudio.Utils;
+package zju.homework.augmentedstudio.Utils.Tools;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import android.app.Activity;
-import android.content.res.AssetManager;
 import android.opengl.ETC1Util;
 import android.opengl.GLES10;
 import android.opengl.GLES20;
