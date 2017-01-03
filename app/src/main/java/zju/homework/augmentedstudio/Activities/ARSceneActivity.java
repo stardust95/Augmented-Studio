@@ -178,10 +178,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 
     private void loadTextures(){
-        mTextures.add(Texture.loadTextureFromApk("texture.bmp", getAssets()));
-        mTextures.add(Texture.loadTextureFromApk("Buildings.jpeg", getAssets()));
+//        mTextures.add(Texture.loadTextureFromApk("texture.bmp", getAssets()));
+//        mTextures.add(Texture.loadTextureFromApk("Buildings.jpeg", getAssets()));
     }
-
 
     private String buildingFilename = "/storage/emulated/0/APK/Buildings.txt";
     private String objFilename = "/storage/emulated/0/APK/armchair.obj";

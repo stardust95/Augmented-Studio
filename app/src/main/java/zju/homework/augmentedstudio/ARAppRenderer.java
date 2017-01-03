@@ -115,31 +115,23 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         Log.i(LOGTAG, "initRendering");
 
         GLES20.glClearColor(1.0f, 1.0f, 1.0f, Vuforia.requiresAlpha() ? 0.0f : 1.0f);
-
-        for(Texture t : mTextures){
-            GLES20.glGenTextures(1, t.mTextureID, 0);
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, t.mTextureID[0]);
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-                    GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-                    GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA,
-                    t.mWidth, t.mHeight, 0, GLES20.GL_RGBA,
-                    GLES20.GL_UNSIGNED_BYTE, t.mData);
-        }
+//
+//        for(Texture t : mTextures){
+//            GLES20.glGenTextures(1, t.mTextureID, 0);
+//            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, t.mTextureID[0]);
+//            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+//                    GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+//            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+//                    GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+//            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA,
+//                    t.mWidth, t.mHeight, 0, GLES20.GL_RGBA,
+//                    GLES20.GL_UNSIGNED_BYTE, t.mData);
+//        }
 
         shaderProgramID = Util.createProgramFromShaderSrc(ObjectShader.CUBE_MESH_VERTEX_SHADER,
                 ObjectShader.CUBE_MESH_FRAGMENT_SHADER);
         if( shaderProgramID > 0 ){
             GLES20.glUseProgram(shaderProgramID);
-//            texSampler2DHandle = GLES20.glGetUniformLocation(shaderProgramID,
-//                    "texSampler2D");
-//            vertexHandle = GLES20.glGetAttribLocation(shaderProgramID,
-//                    "vertexPosition");
-//            textureCoordHandle = GLES20.glGetAttribLocation(shaderProgramID,
-//                    "vertexTexCoord");
-//            mvpMatrixHandle =GLES20.glGetUniformLocation(shaderProgramID,
-//                    "modelViewProjectionMatrix");
 
             mvMatrixHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_MVMatrix");
             lightPosHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_LightPos");
@@ -267,6 +259,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                 List<Material> materials = model.getMaterials();
                 if( materials!= null && materials.size() > 0 ){
                     for (Material material : materials){
+                        material.loadTexture();
                         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
                         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
                                 material.getGlTexture());

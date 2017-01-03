@@ -5,21 +5,30 @@ package zju.homework.augmentedstudio.Models;
  */
 
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.opengl.GLES20;
 import android.util.Log;
+
+import zju.homework.augmentedstudio.Utils.DDSReader;
 
 
 // Support class for the Vuforia samples applications.
 // Exposes functionality for loading a texture from the APK.
 public class Texture
 {
+
+    protected static Map<String, Integer> textureCache = new HashMap<>();
+
     private static final String LOGTAG = "Vuforia_Texture";
 
     public int mWidth;          // The width of the texture.
@@ -30,10 +39,86 @@ public class Texture
     public boolean mSuccess = false;
 
 
+    public static int loadDDSFromStorage(String path) {
+        // check the cache if the texture was already loaded
+        String cacheKey = "storage_" + path.substring(path.lastIndexOf('/'));
+        if (textureCache.containsKey(cacheKey)) {
+            return textureCache.get(cacheKey);
+        }
+
+//        AssetManager assetManager = MainActivity.getAppContext().getAssets();
+
+        Bitmap bitmap;
+        try {
+            InputStream is = new FileInputStream(path);
+            byte [] buffer = new byte[is.available()];
+            is.read(buffer);
+            is.close();
+
+            int [] pixels = DDSReader.read(buffer, DDSReader.ARGB, 0);
+            int width = DDSReader.getWidth(buffer);
+            int height = DDSReader.getHeight(buffer);
+
+            bitmap = Bitmap.createBitmap(pixels, 0, width, width, height, Bitmap.Config.ARGB_8888);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return 0;
+        }
+
+        // load the texture
+        int texture = loadTextureFromBitmap(bitmap);
+        if (texture != 0) {
+            // add it to cache
+            textureCache.put(cacheKey, texture);
+        }
+        return texture;
+    }
+
+    public static int loadTextureFromStorage(String filepath)
+    {
+
+        String cacheKey = "storage_" + filepath.substring(filepath.lastIndexOf('/'));
+        if (textureCache.containsKey(cacheKey)) {
+            return textureCache.get(cacheKey);
+        }
+
+        Bitmap bitmap = null;
+        InputStream inputStream = null;
+        try
+        {
+            inputStream = new FileInputStream(filepath);
+            BufferedInputStream bufferedStream = new BufferedInputStream(
+                    inputStream);
+
+            bitmap = BitmapFactory.decodeStream(bufferedStream);
+
+
+        } catch (IOException e)
+        {
+            Log.e(LOGTAG, "Failed to log texture '" + filepath + "' from APK");
+            Log.i(LOGTAG, e.getMessage());
+            return 0;
+        }
+
+        int texture = loadTextureFromBitmap(bitmap);
+        if (texture != 0) {
+            // add it to cache
+            textureCache.put(cacheKey, texture);
+        }
+        return texture;
+    }
+
     /* Factory function to load a texture from the APK. */
-    public static Texture loadTextureFromApk(String fileName,
+    public static int loadTextureFromApk(String fileName,
                                              AssetManager assets)
     {
+
+        String cacheKey = "asset_" + fileName;
+        if (textureCache.containsKey(cacheKey)) {
+            return textureCache.get(cacheKey);
+        }
+        Bitmap bitmap = null;
         InputStream inputStream = null;
         try
         {
@@ -41,24 +126,36 @@ public class Texture
 
             BufferedInputStream bufferedStream = new BufferedInputStream(
                     inputStream);
-            Bitmap bitMap = BitmapFactory.decodeStream(bufferedStream);
 
-            int[] data = new int[bitMap.getWidth() * bitMap.getHeight()];
-            bitMap.getPixels(data, 0, bitMap.getWidth(), 0, 0,
-                    bitMap.getWidth(), bitMap.getHeight());
+            bitmap = BitmapFactory.decodeStream(bufferedStream);
 
-            return loadTextureFromIntBuffer(data, bitMap.getWidth(),
-                    bitMap.getHeight());
+
         } catch (IOException e)
         {
             Log.e(LOGTAG, "Failed to log texture '" + fileName + "' from APK");
             Log.i(LOGTAG, e.getMessage());
-            return null;
+            return 0;
         }
+
+        int texture = loadTextureFromBitmap(bitmap);
+        if (texture != 0) {
+            // add it to cache
+            textureCache.put(cacheKey, texture);
+        }
+        return texture;
     }
 
+    private static int loadTextureFromBitmap(Bitmap bitMap){
 
-    public static Texture loadTextureFromIntBuffer(int[] data, int width,
+        int[] data = new int[bitMap.getWidth() * bitMap.getHeight()];
+        bitMap.getPixels(data, 0, bitMap.getWidth(), 0, 0,
+                bitMap.getWidth(), bitMap.getHeight());
+
+        return loadTextureFromIntBuffer(data, bitMap.getWidth(),
+                bitMap.getHeight());
+    }
+
+    private static int loadTextureFromIntBuffer(int[] data, int width,
                                                    int height)
     {
         // Convert:
@@ -93,6 +190,18 @@ public class Texture
         data = null;
 
         texture.mSuccess = true;
-        return texture;
+
+
+        GLES20.glGenTextures(1, texture.mTextureID, 0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture.mTextureID[0]);
+        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+                GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
+                GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA,
+                texture.mWidth, texture.mHeight, 0, GLES20.GL_RGBA,
+                GLES20.GL_UNSIGNED_BYTE, texture.mData);
+
+        return texture.mTextureID[0];
     }
 }

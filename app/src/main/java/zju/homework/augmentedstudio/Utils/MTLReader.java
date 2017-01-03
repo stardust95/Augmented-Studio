@@ -67,7 +67,7 @@ public class MTLReader {
                     else
                     if(line.startsWith("map_Ka") || line.startsWith("map_Kd") || line.startsWith("map_Ks")){
                         String[] str=line.split("[ ]+");
-                        currentMtl.setTextureFile(str[1]);
+                        currentMtl.setTextureFile(file.substring(0, file.lastIndexOf('/'))+"/"+str[1]);
                     }
                 }
             }

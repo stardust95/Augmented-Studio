@@ -136,9 +136,6 @@ public class ResourceLoader {
 
                 }else if( words[0].equals("mtllib") ){
                     materials = MTLReader.loadMTL(fileName.substring(0, fileName.lastIndexOf('/'))+"/"+words[1]);
-                    for(Material material : materials){
-                        material.loadTexture(fileName.substring(0, fileName.lastIndexOf('/'))+"/");
-                    }
                 }
 
             }

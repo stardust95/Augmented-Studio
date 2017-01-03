@@ -1,12 +1,11 @@
 package zju.homework.augmentedstudio.Models;
 
 import android.opengl.GLES20;
+import android.text.TextUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-
-import zju.homework.augmentedstudio.Utils.TextureLoader;
 
 /**
  * Created by stardust on 2017/1/2.
@@ -143,11 +142,15 @@ public class Material {
      * @param rootPath The root asset path of the model to search into.
      * @return The loaded texture's GL handle if successful. Returns -1 if there is no texture defined.
      */
-    public int loadTexture(String rootPath) {
+    public int loadTexture() {
         if (textureFileName == null || textureFileName.isEmpty())
             return -1;
 
-        glTexture = TextureLoader.loadTextureFromStorage(rootPath + textureFileName);
+        if( textureFileName.contains(".dds") )
+            glTexture = Texture.loadDDSFromStorage(textureFileName);
+        else
+            glTexture = Texture.loadTextureFromStorage(textureFileName);
+
         if (glTexture == 0)
             throw new RuntimeException("Unable to load the texture file '" + textureFileName + "'!");
 
