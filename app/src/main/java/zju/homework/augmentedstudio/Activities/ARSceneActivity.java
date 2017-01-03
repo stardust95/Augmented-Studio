@@ -187,20 +187,10 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     private String objFilename = "/storage/emulated/0/test.obj";
     private void testLoadModel(){
 
-//        ModelObject object = new ModelObject();
-//        ObjObject objObject = new ObjObject();
         ResourceLoader loader = ResourceLoader.getResourceLoader();
         loader.loadObjObject("object", objFilename);
         ObjObject objObject = loader.getObjObjectByName("object");
         mRenderer.getModels().add(objObject);
-//        try {
-
-//            object.loadTextModel(buildingFilename);
-//            mRenderer.getModels().add(new CubeObject());
-//            mRenderer.getModels().add(object);
-//        }catch (IOException ex){
-//            ex.printStackTrace();
-//        }
 
         return;
     }
@@ -456,12 +446,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
             @Override
             public void onClick(View v) {
 //                uploadScene();
-//                try{
-//                    uploadModels();
+                try{
+                    uploadModels();
 //                    extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
-//                }catch (IOException ex){
-//                    ex.printStackTrace();
-//                }
+                }catch (IOException ex){
+                    ex.printStackTrace();
+                }
             }
         });
         // init spinner

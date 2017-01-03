@@ -11,6 +11,8 @@ import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.List;
 
+//import zju.homework.augmentedstudio.Utils.GeomBuilder;
+//import zju.homework.augmentedstudio.Utils.ObjReader;
 import zju.homework.augmentedstudio.Utils.Vertex;
 
 /**
@@ -44,8 +46,8 @@ public class ObjObject extends MeshObject{
     private final List<Short> indices;
     private final List<Vertex> vertices;
 
-    private final int texVertexStride = mTextureCoordinateDataSize * 4;
-    private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
+    public final int texVertexStride = mTextureCoordinateDataSize * 4;
+    public final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
     // Set color with red, green, blue and alpha (opacity) values
     //float color[] = { 0.2f, 0.709803922f, 0.898039216f, 1.0f };
@@ -55,8 +57,10 @@ public class ObjObject extends MeshObject{
     // Constructor
     public ObjObject(List<Short> indices, List<Vertex> vertices) {
 
+
         this.vertices = vertices;
         this.indices = indices;
+
     }
 
 //    public void setLighting(float[] mvMatrix) {

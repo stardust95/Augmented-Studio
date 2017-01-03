@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import android.app.Activity;
 import android.content.res.AssetManager;
@@ -17,6 +18,7 @@ import android.opengl.GLES10;
 import android.opengl.GLES20;
 import android.util.Log;
 
+import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.ObjObject;
 
 /**
@@ -28,16 +30,11 @@ public class ResourceLoader {
     private static final String TAG = "ObjLoader";
 
     private static ResourceLoader instance = null;
-    private Activity mActivity;
 
     private Map<String, ObjObject> ObjObjectes = new HashMap<String,ObjObject>();
 
     private ResourceLoader() {
 
-    }
-
-    public void setActivity(Activity o) {
-        this.mActivity = o;
     }
 
     public static ResourceLoader getResourceLoader() {
@@ -70,9 +67,8 @@ public class ResourceLoader {
     public String readTextFile(String filename) {
 
         BufferedReader br = null;
-        AssetManager assetMgr = mActivity.getAssets();
         try {
-            InputStream is = assetMgr.open(filename);
+            InputStream is = new FileInputStream(filename);
             StringBuilder builder = new StringBuilder();
             String line;
             br = new BufferedReader(new InputStreamReader(is));
@@ -138,6 +134,9 @@ public class ResourceLoader {
 
                     parseFace(words, positionIndices, textureCoordIndices, normalIndices);
 
+                }else if( words[0].equals("mtllib") ){
+                    Vector<Material> materials = MTLReader.loadMTL(words[1]);
+                    
                 }
 
             }
@@ -234,11 +233,10 @@ public class ResourceLoader {
         GLES20.glGenTextures(1, textureHandle, 0);
 
         //BufferedReader br = null;
-        AssetManager assetMgr = mActivity.getAssets();
         InputStream is = null;
 
         try {
-            is = assetMgr.open(filename, AssetManager.ACCESS_STREAMING);
+            is = new FileInputStream(filename);
 
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
 

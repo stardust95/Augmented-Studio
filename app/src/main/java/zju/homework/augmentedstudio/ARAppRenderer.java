@@ -27,6 +27,7 @@ import zju.homework.augmentedstudio.Shaders.CubeShader;
 import zju.homework.augmentedstudio.Models.Texture;
 import zju.homework.augmentedstudio.Interfaces.ARAppRendererControl;
 import zju.homework.augmentedstudio.GL.ARBaseRenderer;
+import zju.homework.augmentedstudio.Shaders.ObjectShader;
 import zju.homework.augmentedstudio.Utils.ARMath;
 import zju.homework.augmentedstudio.Utils.Util;
 
@@ -59,6 +60,10 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     private int vertexHandle;
     private int textureCoordHandle;
     private int mvpMatrixHandle;
+    private int colorHandle;
+    private int normalHandle;
+    private int lightPosHandle;
+    private int mvMatrixHandle;
     private int texSampler2DHandle;
     Texture texture = null;
 
@@ -71,7 +76,11 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
     // Reference to main activity
     private ARSceneActivity mActivity;
 
+    float color[] = { 1.0f, 0.709803922f, 0.898039216f, 1.0f };
+
     MeshObject cube;
+
+    private float[] lightPos = {1, 2, 2};
 
     private final float[] mProjectionMatrix = new float[16];
     private final float[] mLookatMatrix = new float[]{
@@ -117,18 +126,31 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                     GLES20.GL_UNSIGNED_BYTE, t.mData);
         }
 
-        shaderProgramID = Util.createProgramFromShaderSrc(CubeShader.CUBE_MESH_VERTEX_SHADER,
-                CubeShader.CUBE_MESH_FRAGMENT_SHADER);
+        shaderProgramID = Util.createProgramFromShaderSrc(ObjectShader.CUBE_MESH_VERTEX_SHADER,
+                ObjectShader.CUBE_MESH_FRAGMENT_SHADER);
         if( shaderProgramID > 0 ){
             GLES20.glUseProgram(shaderProgramID);
-            texSampler2DHandle = GLES20.glGetUniformLocation(shaderProgramID,
-                    "texSampler2D");
-            vertexHandle = GLES20.glGetAttribLocation(shaderProgramID,
-                    "vertexPosition");
-            textureCoordHandle = GLES20.glGetAttribLocation(shaderProgramID,
-                    "vertexTexCoord");
-            mvpMatrixHandle =GLES20.glGetUniformLocation(shaderProgramID,
-                    "modelViewProjectionMatrix");
+//            texSampler2DHandle = GLES20.glGetUniformLocation(shaderProgramID,
+//                    "texSampler2D");
+//            vertexHandle = GLES20.glGetAttribLocation(shaderProgramID,
+//                    "vertexPosition");
+//            textureCoordHandle = GLES20.glGetAttribLocation(shaderProgramID,
+//                    "vertexTexCoord");
+//            mvpMatrixHandle =GLES20.glGetUniformLocation(shaderProgramID,
+//                    "modelViewProjectionMatrix");
+
+            mvMatrixHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_MVMatrix");
+            lightPosHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_LightPos");
+
+            vertexHandle = GLES20.glGetAttribLocation(shaderProgramID, "a_Position");
+
+            normalHandle = GLES20.glGetAttribLocation(shaderProgramID, "a_Normal");
+            colorHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_Color");
+
+            texSampler2DHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_Texture");
+            textureCoordHandle = GLES20.glGetAttribLocation(shaderProgramID, "a_TexCoordinate");
+
+            mvpMatrixHandle = GLES20.glGetUniformLocation(shaderProgramID, "u_MVPMatrix");
         }
 
     }
@@ -198,6 +220,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 //                continue;
             }
 
+            GLES20.glUniform3fv(lightPosHandle, 1, lightPos, 0);
             Trackable trackable = result.getTrackable();
 
 //            printUserData(trackable);
@@ -209,7 +232,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
             }else{
                 modelViewMatrix = ARMath.Matrix44FTranspose(ARMath.Matrix44FInverse(modelViewMatrix_Vuforia)).getData();
             }
-
+            GLES20.glUniformMatrix4fv(mvMatrixHandle, 1, false, modelViewMatrix, 0);
             Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
 //            Util.printMatrix(mvpMatrix, 4);
 
@@ -232,18 +255,18 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                         false, 0, model.getVertices());
                 GLES20.glVertexAttribPointer(textureCoordHandle, 2, GLES20.GL_FLOAT,
                         false, 0, model.getTexCoords());
+                GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT,
+                        false, 0, model.getNormals());
 
                 GLES20.glEnableVertexAttribArray(vertexHandle);
-
-
+                GLES20.glEnableVertexAttribArray(normalHandle);
                 GLES20.glEnableVertexAttribArray(textureCoordHandle);
 
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
                         mTextures.get(i).mTextureID[0]);
                 GLES20.glUniform1i(texSampler2DHandle, 0);
-
-
+                GLES20.glUniform4fv(colorHandle, 1, color, 0);
                 GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
                         tmpMvpMatrix, 0);
 
@@ -258,6 +281,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
 
                 GLES20.glDisableVertexAttribArray(vertexHandle);
                 GLES20.glDisableVertexAttribArray(textureCoordHandle);
+                GLES20.glDisableVertexAttribArray(normalHandle);
 
             }
         }
