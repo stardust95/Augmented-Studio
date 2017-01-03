@@ -274,4 +274,5 @@ public class ObjObject extends MeshObject{
     public int getNumObjectIndex() {
         return indices.size();
     }
+
 }

@@ -24,15 +24,15 @@ public class MTLReader {
         try { //try to open file
             reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
         } 		catch(IOException e){
+            e.printStackTrace();
         }
         if(reader!=null){
             try {//try to read lines of the file
                 while((line = reader.readLine()) != null) {
                     if(line.startsWith("newmtl")){
-                        if(currentMtl!=null)
-                            materials.add(currentMtl);
-                        String mtName=line.split("[ ]+",2)[1];
-                        currentMtl=new Material(mtName);
+                        String mtName = line.split("[ ]+", 2)[1];
+                        currentMtl = new Material(mtName);
+                        materials.add(currentMtl);
                     }
                     else
                     if(line.startsWith("Ka")){
@@ -65,16 +65,17 @@ public class MTLReader {
                         currentMtl.setIllum(Integer.parseInt(str[1]));
                     }
                     else
-                    if(line.startsWith("map_Ka")){
+                    if(line.startsWith("map_Ka") || line.startsWith("map_Kd") || line.startsWith("map_Ks")){
                         String[] str=line.split("[ ]+");
                         currentMtl.setTextureFile(str[1]);
                     }
                 }
             }
             catch (Exception e) {
-                // TODO: handle exception
+                e.printStackTrace();
             }
         }
+
         return materials;
     }
 }

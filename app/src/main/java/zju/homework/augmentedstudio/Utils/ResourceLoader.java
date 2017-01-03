@@ -86,7 +86,7 @@ public class ResourceLoader {
     }
 
     public void loadObjObject(String ObjObjectName, String fileName) {
-
+        Vector<Material> materials = null;
         BufferedReader br = null;
 //        AssetManager assetMgr = mActivity.getAssets();
         try {
@@ -135,8 +135,10 @@ public class ResourceLoader {
                     parseFace(words, positionIndices, textureCoordIndices, normalIndices);
 
                 }else if( words[0].equals("mtllib") ){
-                    Vector<Material> materials = MTLReader.loadMTL(words[1]);
-                    
+                    materials = MTLReader.loadMTL(fileName.substring(0, fileName.lastIndexOf('/'))+"/"+words[1]);
+                    for(Material material : materials){
+                        material.loadTexture(fileName.substring(0, fileName.lastIndexOf('/'))+"/");
+                    }
                 }
 
             }
@@ -214,6 +216,9 @@ public class ResourceLoader {
 
 
             ObjObject object = new ObjObject(finalIndices, finalVertices);
+            if( materials != null )
+                object.setMaterials(materials);
+
             object.initialize();
             ObjObjectes.put(ObjObjectName, object);
 

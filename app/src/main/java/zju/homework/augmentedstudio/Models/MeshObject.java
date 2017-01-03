@@ -12,6 +12,7 @@ import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.util.List;
 
 import zju.homework.augmentedstudio.Container.TransformData;
 
@@ -30,6 +31,7 @@ public abstract class MeshObject
 
     protected String modelName;
 
+    protected List<Material> materials;
     protected float height, width;
 
     protected float[] position = new float[3];
@@ -177,5 +179,13 @@ public abstract class MeshObject
 
     public String getModelName() {
         return modelName;
+    }
+
+    public List<Material> getMaterials() {
+        return materials;
+    }
+
+    public void setMaterials(List<Material> materials) {
+        this.materials = materials;
     }
 }

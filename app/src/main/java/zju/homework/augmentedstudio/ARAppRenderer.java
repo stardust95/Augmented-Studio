@@ -15,12 +15,14 @@ import com.vuforia.Trackable;
 import com.vuforia.TrackableResult;
 import com.vuforia.Vuforia;
 
+import java.util.List;
 import java.util.Vector;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import zju.homework.augmentedstudio.Activities.ARSceneActivity;
+import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Shaders.CubeShader;
@@ -262,10 +264,23 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                 GLES20.glEnableVertexAttribArray(normalHandle);
                 GLES20.glEnableVertexAttribArray(textureCoordHandle);
 
-                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
-                        mTextures.get(i).mTextureID[0]);
-                GLES20.glUniform1i(texSampler2DHandle, 0);
+                List<Material> materials = model.getMaterials();
+                if( materials!= null && materials.size() > 0 ){
+                    for (Material material : materials){
+                        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
+                                material.getGlTexture());
+                        GLES20.glUniform1i(texSampler2DHandle, 0);
+                    }
+                }else {
+                    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,
+                            mTextures.get(0).mTextureID[0]);            // default model
+                    GLES20.glUniform1i(texSampler2DHandle, 0);
+                }
+
+
+
                 GLES20.glUniform4fv(colorHandle, 1, color, 0);
                 GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false,
                         tmpMvpMatrix, 0);

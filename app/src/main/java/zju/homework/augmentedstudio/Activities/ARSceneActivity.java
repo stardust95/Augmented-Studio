@@ -184,9 +184,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
 
     private String buildingFilename = "/storage/emulated/0/APK/Buildings.txt";
-    private String objFilename = "/storage/emulated/0/test.obj";
+    private String objFilename = "/storage/emulated/0/APK/armchair.obj";
     private void testLoadModel(){
-
+        Log.i(LOGTAG, objFilename.substring(0, objFilename.lastIndexOf('/')));
         ResourceLoader loader = ResourceLoader.getResourceLoader();
         loader.loadObjObject("object", objFilename);
         ObjObject objObject = loader.getObjObjectByName("object");

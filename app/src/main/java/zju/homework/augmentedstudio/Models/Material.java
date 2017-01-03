@@ -1,8 +1,12 @@
 package zju.homework.augmentedstudio.Models;
 
+import android.opengl.GLES20;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+
+import zju.homework.augmentedstudio.Utils.TextureLoader;
 
 /**
  * Created by stardust on 2017/1/2.
@@ -16,7 +20,8 @@ public class Material {
     float alpha;
     float shine;
     int illum;
-    String textureFile;
+    String textureFileName;
+    protected int glTexture = 0;
 
     public Material(String name){
         this.name=name;
@@ -114,11 +119,11 @@ public class Material {
     }
 
     public String getTextureFile() {
-        return textureFile;
+        return textureFileName;
     }
 
     public void setTextureFile(String textureFile) {
-        this.textureFile = textureFile;
+        this.textureFileName = textureFile;
     }
     public String toString(){
         String str=new String();
@@ -129,6 +134,33 @@ public class Material {
         str+="\nAlpha: "+alpha;
         str+="\nShine: "+shine;
         return str;
+    }
+
+
+    /**
+     * Loads/returns the cached texture for the current material.
+     *
+     * @param rootPath The root asset path of the model to search into.
+     * @return The loaded texture's GL handle if successful. Returns -1 if there is no texture defined.
+     */
+    public int loadTexture(String rootPath) {
+        if (textureFileName == null || textureFileName.isEmpty())
+            return -1;
+
+        glTexture = TextureLoader.loadTextureFromStorage(rootPath + textureFileName);
+        if (glTexture == 0)
+            throw new RuntimeException("Unable to load the texture file '" + textureFileName + "'!");
+
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_REPEAT);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_REPEAT);
+
+        return glTexture;
+    }
+
+    public int getGlTexture() {
+        return glTexture;
     }
 }
 
