@@ -29,7 +29,7 @@ public class NetworkManager {
 
     public NetworkManager(){ }
 
-    public boolean getDocument(String addr, String filepath){
+    public boolean getArchiveFile(String addr, String filepath){
         try {
             URL url = new URL(addr);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -60,7 +60,6 @@ public class NetworkManager {
                         return false;
                     }
                 }
-
             }
 
         }catch (IOException ex){

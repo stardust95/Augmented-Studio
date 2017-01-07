@@ -1,11 +1,13 @@
 package zju.homework.augmentedstudio.Utils;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.util.Base64;
 import android.util.Log;
 
@@ -25,17 +27,22 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
 
+import zju.homework.augmentedstudio.Activities.LoginActivity;
+import zju.homework.augmentedstudio.Activities.MainActivity;
+
+import static android.R.id.message;
+
 /**
  * Created by stardust on 2016/12/12.
  */
 
 public class Util {
 
-    private static final String LOGTAG = "SampleUtils";
+    private static final String LOGTAG = Util.class.getName();
 
     private static final String HOST = "http://222.205.46.130:3000";
     public static final String URL_ACCOUNT = HOST + "/accounts";
-    public static final String URL_ANNOTATION = HOST + "/annotations";
+    public static final String URL_DOWNLOAD = HOST + "/download/";
     public static final String URL_GROUP = HOST + "/groups";
 
     private static ObjectMapper mapper;
@@ -47,7 +54,7 @@ public class Util {
 //        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
-    public static final int REQUEST_OPEN_DOCUMENT = 1;
+    public static final int REQUEST_OPEN_OBJ = 1;
     public static final int REQUEST_ASK_FOR_PERMISSION = 2;
     public static final int REQUEST_LOGIN = 3;
     public static final int REQUEST_CREATE_GROUP = 4;
@@ -395,5 +402,33 @@ public class Util {
         }
         Log.i(LOGTAG, tmp);
         return;
+    }
+
+
+    /**
+     * 用户登录
+     * @param context
+     */
+    public static void userLogin(@NonNull Activity activity) {
+        Intent intent = new Intent(activity, LoginActivity.class);
+
+        activity.startActivityForResult(intent, REQUEST_LOGIN);
+    }
+
+
+    public static void showDialogWithText(Context context, String text) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(context);
+        dialog.setCancelable(false);
+        dialog.setMessage(text);
+        dialog.setPositiveButton("OK", null);
+        dialog.show();
+    }
+
+    public static void createAndShowDialog(Context context, String message, final String title) {
+        final android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(context);
+
+        builder.setMessage(message);
+        builder.setTitle(title);
+        builder.create().show();
     }
 }

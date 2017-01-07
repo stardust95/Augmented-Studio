@@ -34,4 +34,45 @@
     <string name="INIT_OBJECT_DATASET_NOT_FOUND_TITLE">Database not found</string>
     <string name="INIT_OBJECT_DATASET_NOT_FOUND">Please scan an object and load a database</string>
     <string name="button_ok">OK</string>
+
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password (optional)</string>
+    <string name="action_sign_in">Log in</string>
+    <string name="action_register">Register</string>
+    <string name="action_sign_in_short">Log in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+
+
+    <!--菜单相关-->
+    <string name="menu_back">Exit App</string>
+    <string name="menu_extended_tracking">Extended Tracking</string>
+    <string name="menu_character_mode">Character Mode</string>
+    <string name="menu_flash">Flash</string>
+    <string name="menu_flash_error_on">Unable to turn on flash</string>
+    <string name="menu_flash_error_off">Unable to turn off flash</string>
+    <string name="menu_contAutofocus">Autofocus</string>
+    <string name="menu_contAutofocus_error_on">Unable to activate Continuous Auto-Focus</string>
+    <string name="menu_contAutofocus_error_off">Unable to deactivate Continuous Auto-Focus</string>
+    <string name="menu_datasets">DATASETS</string>
+    <string name="menu_camera">CAMERA</string>
+    <string name="menu_camera_front">Front</string>
+    <string name="menu_camera_back">Rear</string>
+    <string name="menu_button_red">Red</string>
+    <string name="menu_button_blue">Blue</string>
+    <string name="menu_button_yellow">Yellow</string>
+    <string name="menu_button_green">Green</string>
+
+
+    <!--小组相关-->
+    <string name="join_group">Join Group</string>
+    <string name="create_group">Create Group</string>
+    <string name="exit_group">Exit Group</string>
 </resources>

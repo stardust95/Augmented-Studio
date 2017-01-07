@@ -2,6 +2,7 @@ package zju.homework.augmentedstudio.Utils.Tools;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import android.net.Uri;
 import android.opengl.ETC1Util;
 import android.opengl.GLES10;
 import android.opengl.GLES20;
@@ -29,7 +31,7 @@ public class ResourceLoader {
 
     private static ResourceLoader instance = null;
 
-    private Map<String, ObjObject> ObjObjectes = new HashMap<String,ObjObject>();
+    private static Map<String, ObjObject> ObjObjectes = new HashMap<String,ObjObject>();
 
     private ResourceLoader() {
 
@@ -86,11 +88,21 @@ public class ResourceLoader {
     public void loadObjObject(String ObjObjectName, String fileName) {
         Vector<Material> materials = null;
         BufferedReader br = null;
-//        AssetManager assetMgr = mActivity.getAssets();
+
+        try{
+            InputStream is = new FileInputStream(fileName);
+            this.loadObjObject(is, ObjObjectName, fileName);
+        }catch (FileNotFoundException ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public void loadObjObject(InputStream is, String ObjObjectName, String fileName){
+        Vector<Material> materials = null;
+        BufferedReader br = null;
         try {
 //            InputStream is = assetMgr.open(fileName,
 //                    AssetManager.ACCESS_STREAMING);
-            InputStream is = new FileInputStream(fileName);
             Log.i(TAG, "Loaded the stream" + is);
 
             String line;
@@ -141,8 +153,6 @@ public class ResourceLoader {
             for (int i=0; i<positionVertices.size(); i++) {
                 vertexNormals.add(new Vector3f(0,0,0));
             }
-
-
 
             // compute the normals
             for (int i=0; i<positionIndices.size()-3; i++) {

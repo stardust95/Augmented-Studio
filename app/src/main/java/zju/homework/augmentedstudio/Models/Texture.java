@@ -42,7 +42,8 @@ public class Texture
     public static int loadDDSFromStorage(String path) {
         // check the cache if the texture was already loaded
         String cacheKey = "storage_" + path.substring(path.lastIndexOf('/'));
-        if (textureCache.containsKey(cacheKey)) {
+        if (textureCache.containsKey(cacheKey)
+                && GLES20.glIsTexture(textureCache.get(cacheKey))) {
             return textureCache.get(cacheKey);
         }
 
@@ -79,8 +80,9 @@ public class Texture
     {
 
         String cacheKey = "storage_" + filepath.substring(filepath.lastIndexOf('/'));
-        if (textureCache.containsKey(cacheKey)) {
-            return textureCache.get(cacheKey);
+        if (textureCache.containsKey(cacheKey)
+                && GLES20.glIsTexture(textureCache.get(cacheKey))) {
+                return textureCache.get(cacheKey);
         }
 
         Bitmap bitmap = null;
@@ -115,7 +117,8 @@ public class Texture
     {
 
         String cacheKey = "asset_" + fileName;
-        if (textureCache.containsKey(cacheKey)) {
+        if (textureCache.containsKey(cacheKey)
+            && GLES20.glIsTexture(textureCache.get(cacheKey))) {
             return textureCache.get(cacheKey);
         }
         Bitmap bitmap = null;

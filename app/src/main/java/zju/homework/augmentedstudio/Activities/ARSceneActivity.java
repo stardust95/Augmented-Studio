@@ -3,31 +3,39 @@ package zju.homework.augmentedstudio.Activities;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.hardware.Camera;
+import android.net.Uri;
 import android.opengl.GLSurfaceView;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.view.ViewGroup.LayoutParams;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import com.vuforia.CameraDevice;
 import com.vuforia.DataSet;
-
 import com.vuforia.ObjectTracker;
 import com.vuforia.RotationalDeviceTracker;
 import com.vuforia.STORAGE_TYPE;
@@ -40,29 +48,38 @@ import com.vuforia.Vuforia;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import zju.homework.augmentedstudio.ARAppRenderer;
-import zju.homework.augmentedstudio.ARApplicationSession;
+import zju.homework.augmentedstudio.AR.ARAppRenderer;
+import zju.homework.augmentedstudio.AR.ARApplicationSession;
 import zju.homework.augmentedstudio.Container.ImageTargetData;
 import zju.homework.augmentedstudio.Container.ModelsData;
 import zju.homework.augmentedstudio.Container.SceneData;
 import zju.homework.augmentedstudio.Container.TransformData;
 import zju.homework.augmentedstudio.GL.ARGLView;
+import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
+import zju.homework.augmentedstudio.Java.Account;
 import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.ObjObject;
-import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.R;
+import zju.homework.augmentedstudio.Tasks.JoinGroupTask;
+import zju.homework.augmentedstudio.UI.AppMenu;
+import zju.homework.augmentedstudio.UI.AppMenuGroup;
+import zju.homework.augmentedstudio.UI.AppMenuInterface;
 import zju.homework.augmentedstudio.Utils.ARApplicationException;
+import zju.homework.augmentedstudio.Utils.ActivityCollector;
+import zju.homework.augmentedstudio.Utils.LoadingDialogHandler;
 import zju.homework.augmentedstudio.Utils.NetworkManager;
 import zju.homework.augmentedstudio.Utils.Tools.ResourceLoader;
 import zju.homework.augmentedstudio.Utils.Util;
 
-public class ARSceneActivity extends Activity implements ARApplicationControl, AdapterView.OnItemSelectedListener{
+public class ARSceneActivity extends Activity implements ARApplicationControl,
+        AdapterView.OnItemSelectedListener, AppMenuInterface {
 
     private static final String LOGTAG = ARSceneActivity.class.getName();
 
@@ -72,32 +89,43 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     private ARApplicationSession appSession;
 
+    //private GestureDetector mGestureDetector = new GestureDetector(this, new GestureListener());
+
     private NetworkManager networkManager = new NetworkManager();
     // View overlays to be displayed in the Augmented View
     private RelativeLayout mUILayout;
     private View mBottomBar;
     private View mCameraButton;
 
+
+    LoadingDialogHandler loadingDialogHandler = new LoadingDialogHandler(this);
+
     // Our OpenGL view:
-//    private SampleApplicationGLView mGlView;
+//    private ApplicationGLView mGlView;
 
     // Our renderer:
     private ARAppRenderer mRenderer;
 
-    private int mCurrentDatasetSelectionIndex = 0;
-    private DataSet mCurrentDataset;
 
-
-    private boolean mSwitchDatasetAsap = false;
     private boolean mContAutoFocus = false;
 
     private ScaleGestureDetector scaleListener;
 
     private String userid;
+    private Account mAccount = null;
 
     private String groupId;
 
     private ArrayList<String> mDatasetStrings = new ArrayList<String>();
+
+
+    private View mFlashOptionView;
+
+    private DataSet mCurrentDataset;
+    private int mCurrentDatasetSelectionIndex = 0;
+    private int mStartDatasetsIndex = 0;
+    private int mDatasetsNumber = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,11 +134,18 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 //        mDatasetStrings.add("target_images.xml");
 //        mDatasetStrings.add("StonesAndChips.xml");
 //        mDatasetStrings.add("Tarmac.xml");
+        startLoadingAnimation();
+
         Bundle bundle = getIntent().getExtras();
 
         mDatasetStrings = bundle.getStringArrayList("dataset");
         groupId = bundle.getString("group");
         userid = bundle.getString("user");
+
+        if(userid == null)
+            userid = "Unknown User";
+
+        mAccount = new Account(userid);
 
         appSession = new ARApplicationSession(this);
 
@@ -124,6 +159,43 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 //        spinnerArray.add("Buildings");
 //        spinnerArray.add("Camera");
     }
+
+
+    private class GestureListener extends
+            GestureDetector.SimpleOnGestureListener
+    {
+        // Used to set autofocus one second after a manual focus is triggered
+        private final Handler autofocusHandler = new Handler();
+
+
+        @Override
+        public boolean onDown(MotionEvent e)
+        {
+            return true;
+        }
+
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e)
+        {
+            // Generates a Handler to trigger autofocus
+            // after 1 second
+            autofocusHandler.postDelayed(new Runnable()
+            {
+                public void run()
+                {
+                    boolean result = CameraDevice.getInstance().setFocusMode(
+                            CameraDevice.FOCUS_MODE.FOCUS_MODE_TRIGGERAUTO);
+
+                    if (!result)
+                        Log.e("SingleTapUp", "Unable to trigger focus");
+                }
+            }, 1000L);
+
+            return true;
+        }
+    }
+
 
     public class ScaleGestureListener implements  ScaleGestureDetector.OnScaleGestureListener{
         private float curSpan;
@@ -153,26 +225,56 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         }
     }
 
+    private float touchDownX;
     @Override
     public boolean onTouchEvent(final MotionEvent event) {
 //        Log.i(LOGTAG, "OnTouchEvent");
         super.onTouchEvent(event);
-        scaleListener.onTouchEvent(event);
+        boolean result = false;
+        if( event.getAction() == MotionEvent.ACTION_DOWN ){
+            touchDownX = event.getX();
+//            return true;
+        }
 
-        mRenderer.handleTouchEvent(event);
-        mGLView.requestRender();
+        if( mAppMenu.isMenuDisplaying() || touchDownX < mGLView.getWidth() / 4 ){
+            // Process the Gestures
+            if (mAppMenu != null && mAppMenu.processEvent(event))
+                return true;
+        }else {
+            scaleListener.onTouchEvent(event);
+
+            mRenderer.handleTouchEvent(event);
+            mGLView.requestRender();
+        }
+
+//        return mGestureDetector.onTouchEvent(event);
         return true;
     }
 
-    private String buildingFilename = "/storage/emulated/0/APK/Buildings.txt";
+//    private String buildingFilename = "/storage/emulated/0/Objs/Buildings.txt";
     private String objFilename = "/storage/emulated/0/APK/armchair.obj";
-    private void testLoadModel(){
-        Log.i(LOGTAG, objFilename.substring(0, objFilename.lastIndexOf('/')));
-        ResourceLoader loader = ResourceLoader.getResourceLoader();
-        loader.loadObjObject("object", objFilename);
-        ObjObject objObject = loader.getObjObjectByName("object");
-        mRenderer.getModels().add(objObject);
+    private void loadObjModel(final String objFilename){
+//        Log.i(LOGTAG, objFilename.substring(0, objFilename.lastIndexOf('/')));
+        final ResourceLoader loader = ResourceLoader.getResourceLoader();
+        final String objName = objFilename.substring(objFilename.lastIndexOf('/'));
+        Log.i(LOGTAG, objName);
 
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] params) {
+                loader.loadObjObject(objName, objFilename);
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Object o) {
+                super.onPostExecute(o);
+
+                ObjObject objObject = loader.getObjObjectByName(objName);
+                mRenderer.getModels().add(objObject);
+            }
+        };
+        task.execute();
         return;
     }
 
@@ -256,6 +358,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
         return result;
     }
 
+
     @Override
     public void onInitARDone(ARApplicationException e) {
 
@@ -265,12 +368,13 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
             mRenderer.setActive(true);
 
-            setContentView(mGLView);
+            addContentView(mGLView, new LayoutParams(LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT));
 
             initLayouts();
 
 //        mRenderer.getModels().add(new CubeObject());
-            testLoadModel();
+            loadObjModel(objFilename);
 
             try{
                 appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
@@ -291,6 +395,11 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
 //        addContentView(mGLView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 //                ViewGroup.LayoutParams.MATCH_PARENT));
+
+            mAppMenu = new AppMenu(ARSceneActivity.this, ARSceneActivity.this, "Image Targets",
+                    mGLView, mUILayout, null,
+                    userid);
+            setAppMenuSettings();
 
         }else {
             e.printStackTrace();
@@ -316,41 +425,26 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 
     // Adds the Overlay view to the GLView
-    private void addOverlayView(boolean initLayout)
+    private void startLoadingAnimation()
     {
-        // Inflates the Overlay Layout to be displayed above the Camera View
-        LayoutInflater inflater = LayoutInflater.from(this);
-        mUILayout = (RelativeLayout) inflater.inflate(
-                R.layout.activity_arscene, null, false);
+        mUILayout = (RelativeLayout) View.inflate(this, R.layout.camera_overlay,
+                null);
 
         mUILayout.setVisibility(View.VISIBLE);
+        mUILayout.setBackgroundColor(Color.BLACK);
 
-        // If this is the first time that the application runs then the
-        // uiLayout background is set to BLACK color, will be set to
-        // transparent once the SDK is initialized and camera ready to draw
-        if (initLayout)
-        {
-            mUILayout.setBackgroundColor(Color.BLACK);
-        }
+        // Gets a reference to the loading dialog
+        loadingDialogHandler.mLoadingDialogContainer = mUILayout
+                .findViewById(R.id.loading_indicator);
+
+        // Shows the loading indicator at start
+        loadingDialogHandler
+                .sendEmptyMessage(LoadingDialogHandler.SHOW_LOADING_DIALOG);
 
         // Adds the inflated layout to the view
-        addContentView(mUILayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT));
+        addContentView(mUILayout, new LayoutParams(LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT));
 
-        // Gets a reference to the bottom navigation bar
-//        mBottomBar = mUILayout.findViewById(R.id.bottom_bar);
-
-        // Gets a reference to the Camera button
-//        mCameraButton = mUILayout.findViewById(R.id.camera_button);
-
-        // Gets a reference to the loading dialog container
-//        loadingDialogHandler.mLoadingDialogContainer = mUILayout
-//                .findViewById(R.id.loading_layout);
-
-//        startUserDefinedTargets();
-//        initializeBuildTargetModeViews();
-
-        mUILayout.bringToFront();
     }
 
     @Override
@@ -445,7 +539,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
         ll.addView(spinner);
 
-        this.addContentView(ll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        addContentView(ll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
     }
 
     @Override
@@ -453,7 +547,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 //        ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
         mRenderer.changeSelection((int)id);
         mGLView.requestRender();
-    }
+}
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
@@ -631,13 +725,11 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     private void uploadModels() throws IOException{
         ModelsData modelsData = null;
         List<String> names = new ArrayList<>();
-        List<String> datas = new ArrayList<>();
         List<TransformData> transforms = new ArrayList<>();
 
         for(MeshObject object : mRenderer.getModels()){
             if( !hasUploaded.contains(object) ){
                 names.add(object.getModelName());
-                datas.add(Util.getStringFromInputStream(new FileInputStream(object.getModelName())));
                 transforms.add(object.getTransform());
                 hasUploaded.add(object);
             }
@@ -645,7 +737,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
         modelsData = new ModelsData(groupId,
                 names.toArray(new String[0]),
-                datas.toArray(new String[0]),
                 transforms.toArray(new TransformData[0]));
         try{
             String filepath = this.getCacheDir() + "/" + "time" + ".models";
@@ -691,6 +782,24 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
     }
 
+    private void downloadModel(final String modelName){
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] params) {
+                String filepath = getCacheDir() + modelName + ".zip";
+                boolean result = networkManager.getArchiveFile(Util.URL_DOWNLOAD + modelName, filepath);
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Object o) {
+                super.onPostExecute(o);
+            }
+        };
+        task.execute();
+
+    }
+
     private void extractModels(String filename){
         try{
             String jsondata = Util.getStringFromInputStream(new FileInputStream(filename));
@@ -698,9 +807,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
 
 //            String[] modelNames = modelsData.getModelName();
 
-            for(int i=0; i<modelsData.getModelData().length; i++){       // if has any new models
+            for(int i=0; i<modelsData.getModelName().length; i++){       // if has any new models
                 ModelObject object = new ModelObject();
-                object.loadTextModel(Util.stringToInputStream(modelsData.getModelData()[i]));
+//                object.loadTextModel(Util.stringToInputStream(modelsData.getModelData()[i]));.
                 hasUploaded.add(object);
                 mRenderer.getModels().add(object);
             }
@@ -726,9 +835,377 @@ public class ARSceneActivity extends Activity implements ARApplicationControl, A
     }
 
 
+    final public static int CMD_BACK = -1;
+    final public static int CMD_EXTENDED_TRACKING = 1;
+    final public static int CMD_AUTOFOCUS = 2;
+    final public static int CMD_FLASH = 3;
+    final public static int CMD_CAMERA_FRONT = 4;
+    final public static int CMD_CAMERA_REAR = 5;
+    final public static int CMD_DATASET_START_INDEX = 6;
+
+    final public static int CMD_JOIN_GROUP = 7;
+    final public static int CMD_CREATE_GROUP = 8;
+    final public static int CMD_EXIT_GROUP = 9;
+
+    final public static int CMD_ONLINE_MODEL = 10;
+    final public static int CMD_LOCAL_MODEL = 11;
+
+    private AppMenu mAppMenu;
+
+    private boolean mSwitchDatasetAsap = false;
+    private boolean mFlash = false;
+    private boolean mContAutofocus = false;
+    private boolean mExtendedTracking = false;
+
+    // 设置菜单
+    private void setAppMenuSettings()
+    {
+        AppMenuGroup group;
+
+        group = mAppMenu.addGroup("", false);
+        group.addTextItem(getString(R.string.menu_back), -1);
+
+        group = mAppMenu.addGroup("Group", true);
+        group.addTextItem(getString(R.string.create_group), CMD_CREATE_GROUP);
+        group.addTextItem(getString(R.string.join_group), CMD_JOIN_GROUP);
+        group.addTextItem(getString(R.string.exit_group), CMD_EXIT_GROUP);
+
+        group = mAppMenu.addGroup("", true);
+        group.addSelectionItem(getString(R.string.menu_extended_tracking),
+                CMD_EXTENDED_TRACKING, false);
+        group.addSelectionItem(getString(R.string.menu_contAutofocus),
+                CMD_AUTOFOCUS, mContAutofocus);
+        mFlashOptionView = group.addSelectionItem(
+                getString(R.string.menu_flash), CMD_FLASH, false);
+
+        Camera.CameraInfo ci = new Camera.CameraInfo();
+        boolean deviceHasFrontCamera = false;
+        boolean deviceHasBackCamera = false;
+        for (int i = 0; i < Camera.getNumberOfCameras(); i++)
+        {
+            Camera.getCameraInfo(i, ci);
+            if (ci.facing == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                deviceHasFrontCamera = true;
+            else if (ci.facing == Camera.CameraInfo.CAMERA_FACING_BACK)
+                deviceHasBackCamera = true;
+        }
+
+        if (deviceHasBackCamera && deviceHasFrontCamera)
+        {
+            group = mAppMenu.addGroup(getString(R.string.menu_camera),
+                    true);
+            group.addRadioItem(getString(R.string.menu_camera_front),
+                    CMD_CAMERA_FRONT, false);
+            group.addRadioItem(getString(R.string.menu_camera_back),
+                    CMD_CAMERA_REAR, true);
+        }
+
+        group = mAppMenu
+                .addGroup(getString(R.string.menu_datasets), true);
+
+        group.addTextItem("View Online Models", CMD_ONLINE_MODEL);
+        group.addTextItem("View Local Models", CMD_LOCAL_MODEL);
+
+        mAppMenu.attachMenu();
+    }
+
+    ArrayList<String> list = new ArrayList<>();
+
+    @Override
+    public boolean menuProcess(int command)
+    {
+
+        boolean result = true;
+
+        switch (command)
+        {
+            case CMD_BACK:
+                finish();
+                break;
+
+            case CMD_FLASH:
+                result = CameraDevice.getInstance().setFlashTorchMode(!mFlash);
+
+                if (result)
+                {
+                    mFlash = !mFlash;
+                } else
+                {
+                    showToast(getString(mFlash ? R.string.menu_flash_error_off
+                            : R.string.menu_flash_error_on));
+                    Log.e(LOGTAG,
+                            getString(mFlash ? R.string.menu_flash_error_off
+                                    : R.string.menu_flash_error_on));
+                }
+                break;
+
+            case CMD_AUTOFOCUS:
+
+                if (mContAutofocus)
+                {
+                    result = CameraDevice.getInstance().setFocusMode(
+                            CameraDevice.FOCUS_MODE.FOCUS_MODE_NORMAL);
+
+                    if (result)
+                    {
+                        mContAutofocus = false;
+                    } else
+                    {
+                        showToast(getString(R.string.menu_contAutofocus_error_off));
+                        Log.e(LOGTAG,
+                                getString(R.string.menu_contAutofocus_error_off));
+                    }
+                } else
+                {
+                    result = CameraDevice.getInstance().setFocusMode(
+                            CameraDevice.FOCUS_MODE.FOCUS_MODE_CONTINUOUSAUTO);
+
+                    if (result)
+                    {
+                        mContAutofocus = true;
+                    } else
+                    {
+                        showToast(getString(R.string.menu_contAutofocus_error_on));
+                        Log.e(LOGTAG,
+                                getString(R.string.menu_contAutofocus_error_on));
+                    }
+                }
+
+                break;
+
+            case CMD_CAMERA_FRONT:
+            case CMD_CAMERA_REAR:
+
+                // Turn off the flash
+                if (mFlashOptionView != null && mFlash)
+                {
+                    // OnCheckedChangeListener is called upon changing the checked state
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
+                    {
+                        ((Switch) mFlashOptionView).setChecked(false);
+                    } else
+                    {
+                        ((CheckBox) mFlashOptionView).setChecked(false);
+                    }
+                }
+
+                appSession.stopCamera();
+
+                try
+                {
+                    appSession
+                            .startAR(command == CMD_CAMERA_FRONT ? CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_FRONT
+                                    : CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_BACK);
+
+                    mRenderer.updateConfiguration();
+
+                } catch (ARApplicationException e)
+                {
+                    showToast(e.getString());
+                    Log.e(LOGTAG, e.getString());
+                    result = false;
+                }
+                doStartTrackers();
+                break;
+
+            case CMD_EXTENDED_TRACKING:
+                for (int tIdx = 0; tIdx < mCurrentDataset.getNumTrackables(); tIdx++)
+                {
+                    Trackable trackable = mCurrentDataset.getTrackable(tIdx);
+
+                    if (!mExtendedTracking)
+                    {
+                        if (!trackable.startExtendedTracking())
+                        {
+                            Log.e(LOGTAG,
+                                    "Failed to start extended tracking target");
+                            result = false;
+                        } else
+                        {
+                            Log.d(LOGTAG,
+                                    "Successfully started extended tracking target");
+                        }
+                    } else
+                    {
+                        if (!trackable.stopExtendedTracking())
+                        {
+                            Log.e(LOGTAG,
+                                    "Failed to stop extended tracking target");
+                            result = false;
+                        } else
+                        {
+                            Log.d(LOGTAG,
+                                    "Successfully started extended tracking target");
+                        }
+                    }
+                }
+
+                if (result)
+                    mExtendedTracking = !mExtendedTracking;
+
+                break;
+
+
+            //小组
+            case CMD_JOIN_GROUP:
+                //加入小组
+                if(mAccount.getGroup() != null) {
+                    Util.showDialogWithText(ARSceneActivity.this, "You have had a group!");
+                    break;
+                }
+
+                final EditText et = new EditText(ARSceneActivity.this);
+
+                new AlertDialog.Builder(ARSceneActivity.this).setTitle("Input group id")
+//                            .setIcon(android.R.drawable.ic_dialog_info)
+                        .setView(et)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog1, int which) {
+                                String input = et.getText().toString();
+                                if (input.equals("")) {
+                                    Toast.makeText(getApplicationContext(), "input can't be vacant" + input, Toast.LENGTH_LONG).show();
+                                }
+                                else {
+
+                                    JoinGroupTask joinGroupTask = new JoinGroupTask(){
+                                        @Override
+                                        protected void onPostExecute(Object res) {
+                                            super.onPostExecute(res);
+                                            Group group = (Group) res;
+                                            //showProgress(false, "");
+                                            if( res == null ){
+                                                Util.createAndShowDialog(ARSceneActivity.this, "Join Group Failed", "msg");
+                                                return;
+                                            }
+                                            /*try{
+                                                String filename = group.getId() + "-" + group.getFileName();
+                                                File tmpFile = File.createTempFile(filename, ".pdf", getExternalCacheDir());
+                                                Log.i(LOG_TAG, tmpFile.getAbsolutePath());
+                                                Uri uri = Util.base64ToFile(group.getPdfData(), tmpFile);
+                                                Intent intent = new Intent(MainActivity.this, PDFViewActivity.class);
+                                                intent.putExtra(PDFViewActivity.EXTRA_URI, uri);
+                                                intent.putExtra(PDFViewActivity.EXTRA_ACCOUNT, mAccount.getID());
+                                                intent.putExtra(PDFViewActivity.EXTRA_GROUP, group.getId());
+                                                ARSceneActivity.this.startActivity(intent);
+                                            }catch (IOException ex){
+                                                ex.printStackTrace();
+                                            }*/
+                                        }
+                                    };
+                                    joinGroupTask.execute(input);
+                                    //showProgress(true, "Joining Group");
+//                                        if(!mAccount.setGroup(input)) {
+//                                            showDialogWithText("Group id wrong!");
+//                                            return;
+//                                        }
+//                                        else {
+//                                            showDialogWithText("Successfully joined!");
+//
+//                                            mDatas[0] = "Your group id:" + mAccount.getGroup().getId() + "\n"
+//                                                    + "Your PDF: " + mAccount.getGroup().getFileName();
+//
+//                                            adapter.notifyDataSetChanged();
+//                                        }
+                                }
+                            }
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+                break;
+
+            case CMD_CREATE_GROUP:
+                //创建小组
+                if( mAccount.hasGroup() ) {
+                    Util.showDialogWithText(ARSceneActivity.this, "You have had a group!");
+                }
+                else {
+                    Util.showOpenFileDialog(ARSceneActivity.this, Util.REQUEST_CREATE_GROUP);     // 先选择需要协作编辑的文件
+                }
+                break;
+
+            case CMD_EXIT_GROUP:
+                //退出小组
+                break;
+
+            //浏览模型
+            case CMD_ONLINE_MODEL:
+                //获取模型图片URL数组
+
+                list.add("https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=214931719,1608091472&fm=116&gp=0.jpg");
+                list.add("http://img06.tooopen.com/images/20161204/tooopen_sl_188713338136.jpg");
+                list.add("https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=2290757533,426974567&fm=116&gp=0.jpg");
+
+                ImageAdapter imageAdapter = new ImageAdapter(this, R.layout.image_item, list);
+                ListView listView = new ListView(ARSceneActivity.this);
+                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+                layoutParams.setMargins(15, 15, 15, 15);
+                listView.setLayoutParams(layoutParams);
+
+                listView.setAdapter(imageAdapter);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(ARSceneActivity.this);
+                builder.setView(listView);
+                builder.setTitle("Choose the Model");
+
+                final AlertDialog alertDialog = builder.create();
+
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        String urlString = list.get(position);
+                        Util.showDialogWithText(ARSceneActivity.this, "正在加载" + urlString);
+
+                        /*用这个URL得到模型然后显示......*/
+
+                        alertDialog.dismiss();
+                    }
+                });
+                alertDialog.show();
+
+                break;
+
+            case CMD_LOCAL_MODEL:
+                Util.showOpenFileDialog(ARSceneActivity.this, Util.REQUEST_OPEN_OBJ);
+                break;
+
+
+            default:
+                if (command >= mStartDatasetsIndex
+                        && command < mStartDatasetsIndex + mDatasetsNumber)
+                {
+                    mSwitchDatasetAsap = true;
+                    mCurrentDatasetSelectionIndex = command
+                            - mStartDatasetsIndex;
+                }
+                break;
+        }
+
+        return result;
+    }
+
     private void showToast(String text)
     {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        loadObjModel(objFilename);
+        if(requestCode == Util.REQUEST_OPEN_OBJ && data != null) {
+            /*打开OBJ*/
+            Uri uri = data.getData();
+            Log.i(LOGTAG, uri.getPath());
+            this.loadObjModel(uri.getPath());
+        }
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        ActivityCollector.finishAll();
     }
 }
 

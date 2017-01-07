@@ -4,14 +4,13 @@ import android.content.Context;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
-import android.view.ScaleGestureDetector;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 
-import zju.homework.augmentedstudio.ARAppRenderer;
+import zju.homework.augmentedstudio.AR.ARAppRenderer;
 
 /**
  * Created by stardust on 2016/12/24.

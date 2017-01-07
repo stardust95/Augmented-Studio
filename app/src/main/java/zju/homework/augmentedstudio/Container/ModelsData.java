@@ -11,16 +11,13 @@ public class ModelsData {
     private String group;
 
     private String[] modelName;
-    private String[] modelData;
     private TransformData[] transforms;
 
-    public ModelsData() {
-    }
+    public ModelsData() { }
 
-    public ModelsData(String group, String[] modelName, String[] modelData, TransformData[] transforms) {
+    public ModelsData(String group, String[] modelName, TransformData[] transforms) {
         this.group = group;
         this.modelName = modelName;
-        this.modelData = modelData;
         this.transforms = transforms;
     }
 
@@ -38,14 +35,6 @@ public class ModelsData {
 
     public void setModelName(String[] modelName) {
         this.modelName = modelName;
-    }
-
-    public String[] getModelData() {
-        return modelData;
-    }
-
-    public void setModelData(String[] modelData) {
-        this.modelData = modelData;
     }
 
     public TransformData[] getTransforms() {
