@@ -4,16 +4,23 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
+import android.opengl.Matrix;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import zju.homework.augmentedstudio.Container.ObjectInfoData;
@@ -21,22 +28,30 @@ import zju.homework.augmentedstudio.Java.Account;
 import zju.homework.augmentedstudio.Java.ImageAdapter;
 import zju.homework.augmentedstudio.R;
 import zju.homework.augmentedstudio.Utils.ActivityCollector;
+import zju.homework.augmentedstudio.Utils.NetworkManager;
 import zju.homework.augmentedstudio.Utils.Util;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static String LOGTAG = MainActivity.class.getName();
+
     private Account mAccount = null;    //当前用户
+
+    private NetworkManager networkManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
+        Util.setCacheDir(getExternalCacheDir().getAbsolutePath());
+        networkManager = new NetworkManager();
 
         ActivityCollector.addActivity(this);
 
         setButton();
 
+
+        mAccount = new Account("admin");
         //Util.userLogin(MainActivity.this);
 
         //loadARScene();
@@ -48,18 +63,22 @@ public class MainActivity extends AppCompatActivity {
     private void loadARScene(){
         Intent intent = new Intent(MainActivity.this, ARSceneActivity.class);
         Bundle extras = new Bundle();
-        extras.putString("group", "123");
-        extras.putString("user", "demouser");
+        if( mAccount != null ){
+            if( mAccount.getGroup() != null )
+                extras.putString("group", mAccount.getGroup().getId());
+            extras.putString("user", mAccount.getID());
+        }
         ArrayList<String> datasets = new ArrayList<String>();
         datasets.add("StonesAndChips.xml");
         extras.putStringArrayList("dataset", datasets);
+        extras.putParcelableArrayList("objects", objectInfoList);
 
         intent.putExtras(extras);
         MainActivity.this.startActivity(intent);
     }
 
 
-    private ArrayList<ObjectInfoData> mList = new ArrayList<>();
+    private ArrayList<ObjectInfoData> objectInfoList = new ArrayList<>();
     private ImageAdapter mAdapter;
 
     private ListView mObjList;
@@ -68,8 +87,60 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout mOpenAR;
     private Button mClear;
 
+
+
+    private void downloadModel(final ObjectInfoData objectInfoData){
+        final String modelName = objectInfoData.getName();
+        final String filepath = getExternalCacheDir() + "/" + modelName + ".zip";
+
+        AsyncTask task = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] params) {
+                Boolean result = false;
+                makeToast("downloading model " + modelName);
+                if( (new File(filepath)).exists() ){
+                    result = true;
+                }else{
+                    Log.i(LOGTAG, "downloading model " + modelName);
+                    result = networkManager.getArchiveFile(Util.URL_DOWNLOAD + modelName, filepath);
+                }
+                return result;
+            }
+
+            @Override
+            protected void onPostExecute(Object result) {
+                super.onPostExecute(result);
+                if( result == Boolean.FALSE ){
+                    return;
+                }
+                try{
+                    String folder = getExternalCacheDir() + "/" + modelName;
+                    Util.unzip(filepath, folder);
+//                    Log.i(LOGTAG, /);
+                    File[] files = (new File(folder)).listFiles();
+                    for(File file : files){
+                        Log.i(LOGTAG, "unzipped file: " + file.getName());
+                        if( file.getName().contains(".obj") ){
+                            ObjectInfoData obj = new ObjectInfoData();
+                            obj.setName(modelName);
+                            obj.setFilename(file.getAbsolutePath());
+                            obj.setImageUrl(objectInfoData.getImageUrl());
+                            objectInfoList.add(obj);
+                            mAdapter.notifyDataSetChanged();
+                            makeToast("download files saved in " + folder);
+                        }
+                    }
+                }catch (IOException ex){
+                    ex.printStackTrace();
+                }
+
+            }
+        };
+        task.execute();
+    }
+
     private void setButton() {
-        mAdapter = new ImageAdapter(MainActivity.this, R.layout.image_item, mList);
+        mAdapter = new ImageAdapter(MainActivity.this, R.layout.image_item, objectInfoList);
         mObjList = (ListView)findViewById(R.id.obj_list_view);
         mObjList.setAdapter(mAdapter);
 
@@ -88,35 +159,53 @@ public class MainActivity extends AppCompatActivity {
         mUrl.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final ArrayList<ObjectInfoData> tmp = new ArrayList<ObjectInfoData>();
 
-                ImageAdapter imageAdapter = new ImageAdapter(MainActivity.this, R.layout.image_item, tmp);
-                ListView listView = new ListView(MainActivity.this);
-                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                layoutParams.setMargins(30, 30, 30, 30);
-                listView.setLayoutParams(layoutParams);
-
-                listView.setAdapter(imageAdapter);
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setView(listView);
-                builder.setTitle("Choose the Model");
-
-                final AlertDialog alertDialog = builder.create();
-
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                AsyncTask task = new AsyncTask() {
                     @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        ObjectInfoData obj = tmp.get(position);
-                        mList.add(obj);
-                        mAdapter.notifyDataSetChanged();
+                    protected Object doInBackground(Object[] params) {
 
-                        Util.showDialogWithText(MainActivity.this, "正在加载" + obj.getFilename());
-
-                        alertDialog.dismiss();
+                        String result = networkManager.getJson(Util.URL_OBJECTLIST);
+                        return result;
                     }
-                });
-                alertDialog.show();
+
+                    @Override
+                    protected void onPostExecute(Object result) {
+                        super.onPostExecute(result);
+                        if( result == null ){
+                            Log.i(LOGTAG, "download list is null");
+                            return;
+                        }
+                        final ArrayList<ObjectInfoData> allObjectList = (ArrayList<ObjectInfoData>)Util.
+                                jsonToObject((String) result, new TypeReference<ArrayList<ObjectInfoData>>() {});
+
+                        ImageAdapter imageAdapter = new ImageAdapter(MainActivity.this, R.layout.image_item, allObjectList);
+                        ListView listView = new ListView(MainActivity.this);
+                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        layoutParams.setMargins(30, 30, 30, 30);
+                        listView.setLayoutParams(layoutParams);
+
+                        listView.setAdapter(imageAdapter);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setView(listView);
+                        builder.setTitle("Choose the Model");
+
+                        final AlertDialog alertDialog = builder.create();
+
+                        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                ObjectInfoData obj = allObjectList.get(position);
+                                downloadModel(allObjectList.get(position));
+                                alertDialog.dismiss();
+                            }
+                        });
+                        alertDialog.show();
+                    }
+                };
+
+                task.execute();
+
             }
         });
 
@@ -132,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
         mClear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mList.clear();
+                objectInfoList.clear();
                 mAdapter.notifyDataSetChanged();
             }
         });
@@ -158,9 +247,18 @@ public class MainActivity extends AppCompatActivity {
                 obj.setName(filename.substring(filename.lastIndexOf('/')+1));
                 obj.setFilename(filename);
 
-                mList.add(obj);
+                objectInfoList.add(obj);
                 mAdapter.notifyDataSetChanged();
             }
         }
+    }
+
+    public void makeToast(final String content){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(MainActivity.this, content, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }

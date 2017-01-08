@@ -23,7 +23,7 @@ public class MTLReader {
         Material currentMtl=null;
         try { //try to open file
             reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-        } 		catch(IOException e){
+        } catch(IOException e){
             e.printStackTrace();
         }
         if(reader!=null){

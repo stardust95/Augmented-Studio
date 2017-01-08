@@ -6,10 +6,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.Camera;
 import android.net.Uri;
-import android.opengl.GLSurfaceView;
+import android.opengl.EGLContext;
+import android.opengl.GLES20;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -48,13 +50,18 @@ import com.vuforia.Vuforia;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import javax.microedition.khronos.egl.EGL10;
 
 import zju.homework.augmentedstudio.AR.ARAppRenderer;
 import zju.homework.augmentedstudio.AR.ARApplicationSession;
@@ -67,7 +74,6 @@ import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.Java.Account;
 import zju.homework.augmentedstudio.Java.ImageAdapter;
-import zju.homework.augmentedstudio.Models.CubeObject;
 import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
@@ -124,7 +130,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
     private ArrayList<String> mDatasetStrings = new ArrayList<String>();
 
-
     private View mFlashOptionView;
 
     private DataSet mCurrentDataset;
@@ -132,14 +137,13 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private int mStartDatasetsIndex = 0;
     private int mDatasetsNumber = 0;
 
+    private ArrayList<ObjectInfoData> objectInfoDataArrayList = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Util.setCacheDir(getExternalCacheDir().getAbsolutePath());
-//        mDatasetStrings.add("target_images.xml");
-//        mDatasetStrings.add("StonesAndChips.xml");
-//        mDatasetStrings.add("Tarmac.xml");
+
         startLoadingAnimation();
 
         Bundle bundle = getIntent().getExtras();
@@ -147,6 +151,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         mDatasetStrings = bundle.getStringArrayList("dataset");
         groupId = bundle.getString("group");
         userid = bundle.getString("user");
+        objectInfoDataArrayList = bundle.getParcelableArrayList("objects");
 
         if(userid == null)
             userid = "Unknown User";
@@ -161,9 +166,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         scaleListener = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());
 
-//        spinnerArray.add("Cube");
-//        spinnerArray.add("Buildings");
-//        spinnerArray.add("Camera");
     }
 
 
@@ -256,9 +258,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //        return mGestureDetector.onTouchEvent(event);
         return true;
     }
-
-    private String buildingFilename = "/storage/emulated/0/Buildings.txt";
-    private String objFilename = "/storage/emulated/0/APK/armchair.obj";
+//
+//    private String buildingFilename = "/storage/emulated/0/Buildings.txt";
+//    private String objFilename = "/storage/emulated/0/APK/armchair.obj";
     private void loadObjModel(final String objPath){
 //        Log.i(LOGTAG, objFilename.substring(0, objFilename.lastIndexOf('/')));
         final ResourceLoader loader = ResourceLoader.getResourceLoader();
@@ -372,11 +374,13 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             addContentView(mGLView, new LayoutParams(LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT));
 
+            for(ObjectInfoData objectInfoData : objectInfoDataArrayList){
+                loadObjModel(objectInfoData.getFilename());
+                spinnerArray.add(objectInfoData.getName());
+            }
+
             initLayouts();
 
-//            loadObjModel(objFilename);
-            downloadModel("armchair");
-            downloadModel("armchair");
             try{
                 appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
 
@@ -488,7 +492,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private ArrayList<String> spinnerArray = null;          // must use this theme
 
     private void initLayouts(){
-        String[] buttonTexts = new String[]{ "Rotate", "TransforM", "Test" };
+        String[] buttonTexts = new String[]{ "Rotate", "Transform", "Test" };
         LinearLayout ll = new LinearLayout(this);
         ll.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
         ll.setBackgroundColor(Color.WHITE);
@@ -522,7 +526,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             public void onClick(View v) {
 //                uploadScene();
 //                try{
-                    downloadModel("armchair");
+
 //                    uploadModels();
 //                    extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
 //                }catch (IOException ex){
@@ -783,55 +787,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
     }
 
-    private void downloadModel(final String modelName){
-        AsyncTask task = new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object[] params) {
-                String filepath = getExternalCacheDir() + "/" + modelName + ".zip";
-                boolean result = false;
-
-                if( (new File(filepath)).exists() ){
-                    result = true;
-                }else{
-                    Log.i(LOGTAG, "downloading model " + modelName);
-                    result = networkManager.getArchiveFile(Util.URL_DOWNLOAD + modelName, filepath);
-                }
-                if( result ){
-                    try{
-                        String folder = getExternalCacheDir() + "/" + modelName;
-                        Util.unzip(filepath, folder);
-                        Log.i(LOGTAG, "download files saved in " + folder);
-                        File[] files = (new File(folder)).listFiles();
-                        for(File file : files){
-                            Log.i(LOGTAG, "unzipped file: " + file.getName());
-                            if( file.getName().contains(".obj") ){
-//                                loadObjModel(file.getAbsolutePath());
-                            }
-                        }
-                    }catch (IOException ex){
-                        ex.printStackTrace();
-                    }
-
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Object o) {
-                super.onPostExecute(o);
-                mGLView.onPause();
-                loadObjModel(objFilename);
-                mGLView.onResume();
-            }
-        };
-        task.execute();
-//        mRenderer.setActive(false);
-
-//        mRenderer.initRendering();
-//        mRenderer.
-
-    }
-
     private void extractModels(String filename){
         try{
             String jsondata = Util.getStringFromInputStream(new FileInputStream(filename));
@@ -862,10 +817,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         }
     }
 
-    private void uploadTransforms(){ // only upload transforms to server
-
-    }
-
 
     final public static int CMD_BACK = -1;
     final public static int CMD_EXTENDED_TRACKING = 1;
@@ -881,6 +832,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
     final public static int CMD_ONLINE_MODEL = 10;
     final public static int CMD_LOCAL_MODEL = 11;
+
+    final public static int CMD_SHARE_ONLINE = 12;
 
     private AppMenu mAppMenu;
 
@@ -937,6 +890,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         group.addTextItem("View Online Models", CMD_ONLINE_MODEL);
         group.addTextItem("View Local Models", CMD_LOCAL_MODEL);
+        group.addTextItem("ScreenShot Share", CMD_SHARE_ONLINE);
 
         mAppMenu.attachMenu();
     }
@@ -1196,10 +1150,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                             @Override
                             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                                 String urlString = imageUrlList.get(position).getImageUrl();
-                                Util.showDialogWithText(ARSceneActivity.this, "正在加载" + urlString);
-
-                                downloadModel(imageUrlList.get(position).getName());
-
                                 alertDialog.dismiss();
                             }
                         });
@@ -1214,6 +1164,55 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                 Util.showOpenFileDialog(ARSceneActivity.this, Util.REQUEST_OPEN_OBJ);
                 break;
 
+            case CMD_SHARE_ONLINE:
+                mGLView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        int width = mGLView.getWidth();
+                        int height = mGLView.getHeight();
+                        int screenshotSize = width * height;
+                        ByteBuffer bb = ByteBuffer.allocateDirect(screenshotSize * 4);
+                        bb.order(ByteOrder.nativeOrder());
+                        GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, bb);
+                        int pixelsBuffer[] = new int[screenshotSize];
+                        bb.asIntBuffer().get(pixelsBuffer);
+                        bb = null;
+
+                        for (int i = 0; i < screenshotSize; ++i) {
+                            // The alpha and green channels' positions are preserved while the      red and blue are swapped
+                            pixelsBuffer[i] = ((pixelsBuffer[i] & 0xff00ff00)) |    ((pixelsBuffer[i] & 0x000000ff) << 16) | ((pixelsBuffer[i] & 0x00ff0000) >> 16);
+                        }
+
+                        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                        bitmap.setPixels(pixelsBuffer, screenshotSize-width, -width, 0, 0, width, height);
+
+                        String file = Util.getCacheDir() + Util.randInt(0, Short.MAX_VALUE) + ".jpg";
+                        try{
+                            FileOutputStream fos = new FileOutputStream(file);
+                            if( fos != null ){
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+                                fos.flush();
+                                fos.close();
+                            }
+                        }catch (FileNotFoundException ex){
+                            ex.printStackTrace();
+                            return;
+                        }catch (IOException ex){
+                            ex.printStackTrace();
+                            return;
+                        }
+
+                        Log.i(LOGTAG, "screen shot saved in " + file);
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(file)));
+                        shareIntent.setType("image/png");
+                        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Share With");
+                        shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        ARSceneActivity.this.startActivity(Intent.createChooser(shareIntent, "ARStudio"));
+                    }
+                });
+
+                break;
 
             default:
                 if (command >= mStartDatasetsIndex
@@ -1239,15 +1238,40 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        loadObjModel(objFilename);
-        if(requestCode == Util.REQUEST_OPEN_OBJ && data != null) {
-            /*打开OBJ*/
-            Uri uri = data.getData();
-            Log.i(LOGTAG, uri.getPath());
-            this.loadObjModel(uri.getPath());
-        }
+//        loadObjModel(objFilename);
+//        if(requestCode == Util.REQUEST_OPEN_OBJ && data != null) {
+//            /*打开OBJ*/
+//            Uri uri = data.getData();
+//            Log.i(LOGTAG, uri.getPath());
+//            this.loadObjModel(uri.getPath());
+//        }
     }
 
+    // from other answer in this question
+    private Bitmap createBitmapFromGLSurface(int x, int y, int w, int h) {
+
+        int bitmapBuffer[] = new int[w * h];
+        int bitmapSource[] = new int[w * h];
+        IntBuffer intBuffer = IntBuffer.wrap(bitmapBuffer);
+        intBuffer.position(0);
+
+        GLES20.glReadPixels(x, y, w, h, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, intBuffer);
+        int offset1, offset2;
+        for (int i = 0; i < h; i++) {
+            offset1 = i * w;
+            offset2 = (h - i - 1) * w;
+            for (int j = 0; j < w; j++) {
+                int texturePixel = bitmapBuffer[offset1 + j];
+                int blue = (texturePixel >> 16) & 0xff;
+                int red = (texturePixel << 16) & 0x00ff0000;
+                int pixel = (texturePixel & 0xff00ff00) | red | blue;
+                bitmapSource[offset2 + j] = pixel;
+            }
+        }
+
+
+        return Bitmap.createBitmap(bitmapSource, w, h, Bitmap.Config.ARGB_8888);
+    }
 
     @Override
     public void onBackPressed() {

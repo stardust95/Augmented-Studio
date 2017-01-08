@@ -12,14 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import android.net.Uri;
 import android.opengl.ETC1Util;
 import android.opengl.GLES10;
 import android.opengl.GLES20;
 import android.util.Log;
 
 import zju.homework.augmentedstudio.Models.Material;
-import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.ObjObject;
 
 /**
@@ -28,7 +26,7 @@ import zju.homework.augmentedstudio.Models.ObjObject;
 
 public class ResourceLoader {
 
-    private static final String TAG = "ObjLoader";
+    private static final String LOGTAG = ResourceLoader.class.getName();
 
     private static ResourceLoader instance = null;
 
@@ -53,7 +51,8 @@ public class ResourceLoader {
         String[] parts;
         int i=1;
         for (i=1; i<4; i++) {
-            parts = words[i].split("/");
+
+            parts = words[i].replace("//","/").split("/");
             short s = Short.parseShort(parts[0]);
             s--;
             short s2 = Short.parseShort(parts[1]);
@@ -80,7 +79,7 @@ public class ResourceLoader {
 
             return builder.toString();
         } catch (IOException ex) {
-            Log.e(TAG, "Could not open file: " + filename);
+            Log.e(LOGTAG, "Could not open file: " + filename);
         }
 
         return null;
@@ -105,7 +104,7 @@ public class ResourceLoader {
         try {
 //            InputStream is = assetMgr.open(fileName,
 //                    AssetManager.ACCESS_STREAMING);
-            Log.i(TAG, "Loaded the stream" + is);
+            Log.i(LOGTAG, "Loaded the stream" + is);
 
             String line;
             br = new BufferedReader(new InputStreamReader(is));
@@ -122,10 +121,9 @@ public class ResourceLoader {
 
             while ((line = br.readLine()) != null) {
                 String[] words;
-                words = line.split(" ");
+                words = line.replace("  ", " ").split(" ");
 
                 if (words[0].equals("v")) {
-
                     float x = Float.parseFloat(words[1]);
                     float y = Float.parseFloat(words[2]);
                     float z = Float.parseFloat(words[3]);
@@ -227,12 +225,12 @@ public class ResourceLoader {
                 object.setMaterials(materials);
 
             object.initialize();
-            Log.v(TAG, "Successfully loaded model from OBJ");
+            Log.v(LOGTAG, "Successfully loaded model from OBJ");
 //            ObjObjectes.put(ObjObjectName, object);
             return object;
 
         } catch (IOException ex) {
-            Log.e(TAG, "Could not find the model");
+            Log.e(LOGTAG, "Could not find the model");
         }
         return null;
     }
@@ -241,7 +239,7 @@ public class ResourceLoader {
 
         final int[] textureHandle = new int[1];
 
-        Log.w(TAG, "ETC1 texture support: " + ETC1Util.isETC1Supported());
+        Log.w(LOGTAG, "ETC1 texture support: " + ETC1Util.isETC1Supported());
 
         GLES20.glGenTextures(1, textureHandle, 0);
 
@@ -259,7 +257,7 @@ public class ResourceLoader {
 
             ETC1Util.loadTexture(GLES10.GL_TEXTURE_2D, 0, 0, GLES10.GL_RGB, GLES10.GL_UNSIGNED_SHORT_5_6_5, is);
 
-            Log.v(TAG, "Loaded texture: " + filename);
+            Log.v(LOGTAG, "Loaded texture: " + filename);
         } catch (IOException ex) {
 
         } finally {

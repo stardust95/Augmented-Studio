@@ -36,7 +36,9 @@ public abstract class MeshObject
 
     protected float[] position = new float[3];
     protected float[] rotation = new float[3];
-    protected float scale = 10f;
+    protected float scale = 30f;
+    public final float MAXSCALE = scale * 20;
+    public final float MINSCALE = 1;
 
     protected int textureID;
 
