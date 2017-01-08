@@ -153,6 +153,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         userid = bundle.getString("user");
         objectInfoDataArrayList = bundle.getParcelableArrayList("objects");
 
+        mDatasetsNumber = mDatasetStrings.size();
+
         if(userid == null)
             userid = "Unknown User";
 
@@ -492,7 +494,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private ArrayList<String> spinnerArray = null;          // must use this theme
 
     private void initLayouts(){
-        String[] buttonTexts = new String[]{ "Rotate", "Transform", "Test" };
+        String[] buttonTexts = new String[]{ "Rotate", "Transform" };
         LinearLayout ll = new LinearLayout(this);
         ll.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
         ll.setBackgroundColor(Color.WHITE);
@@ -521,19 +523,20 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             ll.addView(buttons[i]);
         }
         buttons[1].setEnabled(false);       // default is transform mode
-        buttons[2].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                uploadScene();
-//                try{
+        if( buttonTexts.length > 2 )
+            buttons[2].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+    //                uploadScene();
+    //                try{
 
-//                    uploadModels();
-//                    extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
-//                }catch (IOException ex){
-//                    ex.printStackTrace();
-//                }
-            }
-        });
+    //                    uploadModels();
+    //                    extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
+    //                }catch (IOException ex){
+    //                    ex.printStackTrace();
+    //                }
+                }
+            });
         // init spinner
         spinner = new Spinner(this);
         spinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
@@ -888,8 +891,10 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         group = mAppMenu
                 .addGroup(getString(R.string.menu_datasets), true);
 
-        group.addTextItem("View Online Models", CMD_ONLINE_MODEL);
-        group.addTextItem("View Local Models", CMD_LOCAL_MODEL);
+        group.addRadioItem("Stones & Chips", mStartDatasetsIndex, true);
+        group.addRadioItem("Tarmac", mStartDatasetsIndex + 1, false);
+
+        group = mAppMenu.addGroup("Others", true);
         group.addTextItem("ScreenShot Share", CMD_SHARE_ONLINE);
 
         mAppMenu.attachMenu();
