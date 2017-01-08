@@ -19,6 +19,7 @@ import android.opengl.GLES20;
 import android.util.Log;
 
 import zju.homework.augmentedstudio.Models.Material;
+import zju.homework.augmentedstudio.Models.ModelObject;
 import zju.homework.augmentedstudio.Models.ObjObject;
 
 /**
@@ -31,7 +32,7 @@ public class ResourceLoader {
 
     private static ResourceLoader instance = null;
 
-    private static Map<String, ObjObject> ObjObjectes = new HashMap<String,ObjObject>();
+//    private static Map<String, ObjObject> ObjObjectes = new HashMap<String,ObjObject>();
 
     private ResourceLoader() {
 
@@ -85,19 +86,20 @@ public class ResourceLoader {
         return null;
     }
 
-    public void loadObjObject(String ObjObjectName, String fileName) {
+    public ObjObject loadObjObject(String ObjObjectName, String fileName) {
         Vector<Material> materials = null;
         BufferedReader br = null;
 
         try{
             InputStream is = new FileInputStream(fileName);
-            this.loadObjObject(is, ObjObjectName, fileName);
+            return this.loadObjObject(is, ObjObjectName, fileName);
         }catch (FileNotFoundException ex){
             ex.printStackTrace();
         }
+        return null;
     }
 
-    public void loadObjObject(InputStream is, String ObjObjectName, String fileName){
+    public ObjObject loadObjObject(InputStream is, String ObjObjectName, String fileName){
         Vector<Material> materials = null;
         BufferedReader br = null;
         try {
@@ -225,13 +227,14 @@ public class ResourceLoader {
                 object.setMaterials(materials);
 
             object.initialize();
-            ObjObjectes.put(ObjObjectName, object);
-
             Log.v(TAG, "Successfully loaded model from OBJ");
+//            ObjObjectes.put(ObjObjectName, object);
+            return object;
 
         } catch (IOException ex) {
             Log.e(TAG, "Could not find the model");
         }
+        return null;
     }
 
     public int loadTexture(String filename) {
@@ -276,7 +279,7 @@ public class ResourceLoader {
         return textureHandle[0];
     }
 
-    public ObjObject getObjObjectByName(String name) {
-        return ObjObjectes.get(name);
-    }
+//    public ObjObject getObjObjectByName(String name) {
+//        return ObjObjectes.get(name);
+//    }
 }

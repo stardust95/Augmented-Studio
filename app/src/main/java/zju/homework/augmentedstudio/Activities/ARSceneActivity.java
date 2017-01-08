@@ -34,6 +34,7 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.vuforia.CameraDevice;
 import com.vuforia.DataSet;
 import com.vuforia.ObjectTracker;
@@ -45,9 +46,11 @@ import com.vuforia.Tracker;
 import com.vuforia.TrackerManager;
 import com.vuforia.Vuforia;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -57,11 +60,14 @@ import zju.homework.augmentedstudio.AR.ARAppRenderer;
 import zju.homework.augmentedstudio.AR.ARApplicationSession;
 import zju.homework.augmentedstudio.Container.ImageTargetData;
 import zju.homework.augmentedstudio.Container.ModelsData;
+import zju.homework.augmentedstudio.Container.ObjectInfoData;
 import zju.homework.augmentedstudio.Container.SceneData;
 import zju.homework.augmentedstudio.Container.TransformData;
 import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.Java.Account;
+import zju.homework.augmentedstudio.Java.ImageAdapter;
+import zju.homework.augmentedstudio.Models.CubeObject;
 import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
@@ -130,7 +136,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Util.setCacheDir(getExternalCacheDir().getAbsolutePath());
 //        mDatasetStrings.add("target_images.xml");
 //        mDatasetStrings.add("StonesAndChips.xml");
 //        mDatasetStrings.add("Tarmac.xml");
@@ -236,7 +242,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //            return true;
         }
 
-        if( mAppMenu.isMenuDisplaying() || touchDownX < mGLView.getWidth() / 4 ){
+        if( mAppMenu != null && (mAppMenu.isMenuDisplaying() || touchDownX < mGLView.getWidth() / 4) ){
             // Process the Gestures
             if (mAppMenu != null && mAppMenu.processEvent(event))
                 return true;
@@ -251,30 +257,25 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         return true;
     }
 
-//    private String buildingFilename = "/storage/emulated/0/Objs/Buildings.txt";
+    private String buildingFilename = "/storage/emulated/0/Buildings.txt";
     private String objFilename = "/storage/emulated/0/APK/armchair.obj";
-    private void loadObjModel(final String objFilename){
+    private void loadObjModel(final String objPath){
 //        Log.i(LOGTAG, objFilename.substring(0, objFilename.lastIndexOf('/')));
         final ResourceLoader loader = ResourceLoader.getResourceLoader();
-        final String objName = objFilename.substring(objFilename.lastIndexOf('/'));
-        Log.i(LOGTAG, objName);
-
+        final String objName = objPath.substring(objPath.lastIndexOf('/')+1);
+        Log.i(LOGTAG, objName)  ;
+//        mRenderer.setActive(false);
         AsyncTask task = new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] params) {
-                loader.loadObjObject(objName, objFilename);
+//                mRenderer.getModels().add(object);
                 return null;
             }
 
-            @Override
-            protected void onPostExecute(Object o) {
-                super.onPostExecute(o);
-
-                ObjObject objObject = loader.getObjObjectByName(objName);
-                mRenderer.getModels().add(objObject);
-            }
         };
-        task.execute();
+        ObjObject objObject = loader.loadObjObject(objName, objPath);
+        mRenderer.getModels().add(objObject);
+
         return;
     }
 
@@ -373,9 +374,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
             initLayouts();
 
-//        mRenderer.getModels().add(new CubeObject());
-            loadObjModel(objFilename);
-
+//            loadObjModel(objFilename);
+            downloadModel("armchair");
+            downloadModel("armchair");
             try{
                 appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
 
@@ -392,7 +393,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             else
                 Log.e(LOGTAG, "Unable to enable continuous autofocus");
 
-
+            Log.i(LOGTAG, "The thread id = " + android.os.Process.myPid());
 //        addContentView(mGLView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
 //                ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -400,7 +401,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                     mGLView, mUILayout, null,
                     userid);
             setAppMenuSettings();
-
         }else {
             e.printStackTrace();
         }
@@ -418,7 +418,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         mGLView.setRenderer(mRenderer);
 
-        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+//        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         mGLView.setZOrderMediaOverlay(true);
 
 //        mGestureDetector = new GestureDetector(this, new GestureListen)
@@ -521,12 +521,13 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             @Override
             public void onClick(View v) {
 //                uploadScene();
-                try{
-                    uploadModels();
+//                try{
+                    downloadModel("armchair");
+//                    uploadModels();
 //                    extractModels("/data/data/zju.homework.augmentedstudio/cache/time.models");
-                }catch (IOException ex){
-                    ex.printStackTrace();
-                }
+//                }catch (IOException ex){
+//                    ex.printStackTrace();
+//                }
             }
         });
         // init spinner
@@ -786,17 +787,48 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         AsyncTask task = new AsyncTask() {
             @Override
             protected Object doInBackground(Object[] params) {
-                String filepath = getCacheDir() + modelName + ".zip";
-                boolean result = networkManager.getArchiveFile(Util.URL_DOWNLOAD + modelName, filepath);
+                String filepath = getExternalCacheDir() + "/" + modelName + ".zip";
+                boolean result = false;
+
+                if( (new File(filepath)).exists() ){
+                    result = true;
+                }else{
+                    Log.i(LOGTAG, "downloading model " + modelName);
+                    result = networkManager.getArchiveFile(Util.URL_DOWNLOAD + modelName, filepath);
+                }
+                if( result ){
+                    try{
+                        String folder = getExternalCacheDir() + "/" + modelName;
+                        Util.unzip(filepath, folder);
+                        Log.i(LOGTAG, "download files saved in " + folder);
+                        File[] files = (new File(folder)).listFiles();
+                        for(File file : files){
+                            Log.i(LOGTAG, "unzipped file: " + file.getName());
+                            if( file.getName().contains(".obj") ){
+//                                loadObjModel(file.getAbsolutePath());
+                            }
+                        }
+                    }catch (IOException ex){
+                        ex.printStackTrace();
+                    }
+
+                }
                 return null;
             }
 
             @Override
             protected void onPostExecute(Object o) {
                 super.onPostExecute(o);
+                mGLView.onPause();
+                loadObjModel(objFilename);
+                mGLView.onResume();
             }
         };
         task.execute();
+//        mRenderer.setActive(false);
+
+//        mRenderer.initRendering();
+//        mRenderer.
 
     }
 
@@ -909,7 +941,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         mAppMenu.attachMenu();
     }
 
-    ArrayList<String> list = new ArrayList<>();
+    ArrayList<ObjectInfoData> imageUrlList = new ArrayList<>();
 
     @Override
     public boolean menuProcess(int command)
@@ -1131,37 +1163,51 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             case CMD_ONLINE_MODEL:
                 //获取模型图片URL数组
 
-                list.add("https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=214931719,1608091472&fm=116&gp=0.jpg");
-                list.add("http://img06.tooopen.com/images/20161204/tooopen_sl_188713338136.jpg");
-                list.add("https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=2290757533,426974567&fm=116&gp=0.jpg");
-
-                ImageAdapter imageAdapter = new ImageAdapter(this, R.layout.image_item, list);
-                ListView listView = new ListView(ARSceneActivity.this);
-                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-                layoutParams.setMargins(15, 15, 15, 15);
-                listView.setLayoutParams(layoutParams);
-
-                listView.setAdapter(imageAdapter);
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(ARSceneActivity.this);
-                builder.setView(listView);
-                builder.setTitle("Choose the Model");
-
-                final AlertDialog alertDialog = builder.create();
-
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                AsyncTask task = new AsyncTask() {
                     @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        String urlString = list.get(position);
-                        Util.showDialogWithText(ARSceneActivity.this, "正在加载" + urlString);
-
-                        /*用这个URL得到模型然后显示......*/
-
-                        alertDialog.dismiss();
+                    protected Object doInBackground(Object[] params) {
+                        String result = networkManager.getJson(Util.URL_OBJECTLIST);
+                        return result;
                     }
-                });
-                alertDialog.show();
 
+                    @Override
+                    protected void onPostExecute(Object result) {
+                        super.onPostExecute(result);
+                        if( result == null )
+                            return;
+                        imageUrlList = (ArrayList<ObjectInfoData>)Util.
+                                jsonToObject((String) result, new TypeReference<ArrayList<ObjectInfoData>>() {});
+
+                        ImageAdapter imageAdapter = new ImageAdapter(ARSceneActivity.this, R.layout.image_item, imageUrlList);
+                        ListView listView = new ListView(ARSceneActivity.this);
+                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+                        layoutParams.setMargins(15, 15, 15, 15);
+                        listView.setLayoutParams(layoutParams);
+
+                        listView.setAdapter(imageAdapter);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(ARSceneActivity.this);
+                        builder.setView(listView);
+                        builder.setTitle("Choose the Model");
+
+                        final AlertDialog alertDialog = builder.create();
+
+                        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                String urlString = imageUrlList.get(position).getImageUrl();
+                                Util.showDialogWithText(ARSceneActivity.this, "正在加载" + urlString);
+
+                                downloadModel(imageUrlList.get(position).getName());
+
+                                alertDialog.dismiss();
+                            }
+                        });
+                        alertDialog.show();
+
+                    }
+                };
+                task.execute();
                 break;
 
             case CMD_LOCAL_MODEL:

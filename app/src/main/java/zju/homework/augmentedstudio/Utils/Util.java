@@ -14,10 +14,13 @@ import android.util.Log;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +29,8 @@ import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import zju.homework.augmentedstudio.Activities.LoginActivity;
 import zju.homework.augmentedstudio.Activities.MainActivity;
@@ -40,12 +45,20 @@ public class Util {
 
     private static final String LOGTAG = Util.class.getName();
 
-    private static final String HOST = "http://222.205.46.130:3000";
+    private static int BUFFER_SIZE = 1024;
+
+    private static final String HOST = "http://123.206.216.203:3000";
     public static final String URL_ACCOUNT = HOST + "/accounts";
-    public static final String URL_DOWNLOAD = HOST + "/download/";
+    public static final String URL_OBJECTS = HOST + "/objects";
+    public static final String URL_DOWNLOAD = URL_OBJECTS + "/download/";
+    public static final String URL_OBJECTLIST = URL_OBJECTS+ "/list";
     public static final String URL_GROUP = HOST + "/groups";
 
     private static ObjectMapper mapper;
+
+    private static String cacheDir;
+
+
 
     static {
         mapper = new ObjectMapper();
@@ -69,6 +82,8 @@ public class Util {
         activity.startActivityForResult(intent, requestCode);
 
     }
+
+
 
     public static byte[] getBytesFromInputStream(InputStream is) throws IOException{
         ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
@@ -430,5 +445,72 @@ public class Util {
         builder.setMessage(message);
         builder.setTitle(title);
         builder.create().show();
+    }
+
+
+    public static void unzip(String zipFile, String location) throws IOException {
+        int size;
+        byte[] buffer = new byte[BUFFER_SIZE];
+
+        try {
+            if ( !location.endsWith("/") ) {
+                location += "/";
+            }
+            File f = new File(location);
+            if(!f.isDirectory()) {
+                f.mkdirs();
+            }
+            ZipInputStream zin = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile), BUFFER_SIZE));
+            try {
+                ZipEntry ze = null;
+                while ((ze = zin.getNextEntry()) != null) {
+                    String path = location + ze.getName();
+                    File unzipFile = new File(path);
+
+                    if (ze.isDirectory()) {
+                        if(!unzipFile.isDirectory()) {
+                            unzipFile.mkdirs();
+                        }
+                    } else {
+                        // check for and create parent directories if they don't exist
+                        File parentDir = unzipFile.getParentFile();
+                        if ( null != parentDir ) {
+                            if ( !parentDir.isDirectory() ) {
+                                parentDir.mkdirs();
+                            }
+                        }
+
+                        // unzip the file
+                        FileOutputStream out = new FileOutputStream(unzipFile, false);
+                        BufferedOutputStream fout = new BufferedOutputStream(out, BUFFER_SIZE);
+                        try {
+                            while ( (size = zin.read(buffer, 0, BUFFER_SIZE)) != -1 ) {
+                                fout.write(buffer, 0, size);
+                            }
+
+                            zin.closeEntry();
+                        }
+                        finally {
+                            fout.flush();
+                            fout.close();
+                        }
+                    }
+                }
+            }
+            finally {
+                zin.close();
+            }
+        }
+        catch (Exception e) {
+            Log.e(LOGTAG, "Unzip exception", e);
+        }
+    }
+
+    public static String getCacheDir() {
+        return cacheDir;
+    }
+
+    public static void setCacheDir(String cacheDir) {
+        Util.cacheDir = cacheDir;
     }
 }

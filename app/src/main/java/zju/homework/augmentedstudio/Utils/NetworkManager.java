@@ -60,12 +60,15 @@ public class NetworkManager {
                         return false;
                     }
                 }
+            }else {
+                return false;
             }
 
         }catch (IOException ex){
             ex.printStackTrace();
             return false;
         }
+        Log.i(LOG_TAG, "archive saved at " + filepath);
         return true;
     }
 

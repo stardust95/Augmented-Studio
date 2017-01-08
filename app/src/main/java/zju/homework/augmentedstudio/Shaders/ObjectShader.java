@@ -7,6 +7,7 @@ package zju.homework.augmentedstudio.Shaders;
 public class ObjectShader {
 
     public static final String CUBE_MESH_VERTEX_SHADER = " \n" + "\n"+
+            "precision mediump float;\n" +
             "uniform mat4 u_MVPMatrix;\n" +
             "uniform mat4 u_MVMatrix;\n" +
             "uniform vec4 u_Color;\n" +
