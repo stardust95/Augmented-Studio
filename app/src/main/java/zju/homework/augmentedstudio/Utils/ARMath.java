@@ -18,7 +18,7 @@ import com.vuforia.VideoBackgroundConfig;
 public class ARMath
 {
 
-    private static final String LOGTAG = ARMath.class.getName();
+    private static final String LOGTAG = ARMath.class.getSimpleName();
 
     private static float temp[] = new float[16];
     private static Vec3F mLineStart = new Vec3F();

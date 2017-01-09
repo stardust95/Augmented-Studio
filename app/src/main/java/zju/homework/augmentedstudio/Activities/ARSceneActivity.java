@@ -100,7 +100,7 @@ import zju.homework.augmentedstudio.Utils.Util;
 public class ARSceneActivity extends Activity implements ARApplicationControl,
         AdapterView.OnItemSelectedListener, AppMenuInterface {
 
-    private static final String LOGTAG = ARSceneActivity.class.getName();
+    private static final String LOGTAG = ARSceneActivity.class.getSimpleName();
 
     public final static String BUNDLE_GROUP = "group";
     public final static String BUNDLE_USER = "user";
@@ -292,6 +292,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //        Log.i(LOGTAG, "OnTouchEvent");
         super.onTouchEvent(event);
         boolean result = false;
+        if( event.getAction() == MotionEvent.ACTION_UP )
+           selectObject((int) event.getX(), (int) event.getY());
+
         if( event.getAction() == MotionEvent.ACTION_DOWN ){
             touchDownX = event.getX();
 //            return true;
@@ -308,8 +311,30 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             mGLView.requestRender();
         }
 
-//        return mGestureDetector.onTouchEvent(event);
         return true;
+    }
+
+    public static int getColor(int width, int height, int x, int y) {
+        int screenshotSize = width * height;
+        ByteBuffer bb = ByteBuffer.allocateDirect(screenshotSize * 4);
+        bb.order(ByteOrder.nativeOrder());
+        GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, bb);
+        int pixelsBuffer[] = new int[screenshotSize];
+        bb.asIntBuffer().get(pixelsBuffer);
+
+        return pixelsBuffer[(height - y -1) * width + x];
+    }
+
+    private void selectObject(final int x, final int y){
+        mGLView.queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mRenderer.setColorPicking(true);
+                int[] position = mRenderer.getTouchPosition();
+                position[0] = x;
+                position[1] = y;
+            }
+        });
     }
 //
 //    private String buildingFilename = "/storage/emulated/0/Buildings.txt";
@@ -479,7 +504,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         mGLView.setRenderer(mRenderer);
 
-        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+//        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         mGLView.setZOrderMediaOverlay(true);
 
 //        mGestureDetector = new GestureDetector(this, new GestureListen)
@@ -527,6 +552,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //            }
 
         }
+
     }
 
     @Override

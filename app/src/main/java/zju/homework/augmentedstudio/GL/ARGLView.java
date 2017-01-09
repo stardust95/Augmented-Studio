@@ -18,7 +18,7 @@ import zju.homework.augmentedstudio.AR.ARAppRenderer;
 
 public class ARGLView extends GLSurfaceView{
 
-    private static String LOGTAG = ARGLView.class.getName();
+    private static String LOGTAG = ARGLView.class.getSimpleName();
 
     private ARAppRenderer renderer;
 

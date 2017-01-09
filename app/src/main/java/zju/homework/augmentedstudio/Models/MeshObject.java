@@ -34,7 +34,7 @@ public abstract class MeshObject
     protected List<Material> materials;
     protected float height, width;
 
-    protected float[] color = new float[]{ 1f, 1f, 1f, 1f};
+    protected float[] color = new float[]{ 0f, 0f, 0f, 1f};
 
     protected float[] position = new float[3];
     protected float[] rotation = new float[3];

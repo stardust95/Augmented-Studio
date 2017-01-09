@@ -6,7 +6,7 @@ package zju.homework.augmentedstudio.Shaders;
 
 public class ObjectShader {
 
-    public static final String OBJECT_MESH_VERTEX_SHADER = " \n" + "\n"+
+    public static final String OBJECT_COMMON_VERTEX_SHADER = " \n" + "\n"+
             "precision mediump float;\n" +
             "uniform mat4 u_MVPMatrix;\n" +
             "uniform mat4 u_MVMatrix;\n" +
@@ -31,7 +31,7 @@ public class ObjectShader {
             "     v_TexCoordinate = a_TexCoordinate;\n" +
             "}";
 
-    public static final String OBJECT_MESH_FRAGMENT_SHADER = " \n" + "\n"+
+    public static final String OBJECT_COMMON_FRAGMENT_SHADER = " \n" + "\n"+
             "precision mediump float;\n" +
             "uniform vec3 u_LightPos;\n" +
             "uniform sampler2D u_Texture;\n" +
@@ -55,7 +55,36 @@ public class ObjectShader {
             "       gl_FragColor = v_Color; \n" +
             "   } else {\n" +
 //            "    gl_FragColor = (v_Color * diffuse * texture2D(u_Texture, v_TexCoordinate));\n" +
-            "       gl_FragColor = (v_Color * texture2D(u_Texture, v_TexCoordinate));\n" +
+            "       gl_FragColor = (texture2D(u_Texture, v_TexCoordinate));\n" +
+//            "    gl_FragColor = texture2D(u_Texture, v_TexCoordinate);\n" +
+            "   }\n" +
+            "}";
+
+    public static final String OBJECT_LAMBERT_FRAGMENT_SHADER = " \n" + "\n"+
+            "precision mediump float;\n" +
+            "uniform vec3 u_LightPos;\n" +
+            "uniform sampler2D u_Texture;\n" +
+            "uniform float u_isColorPicking;\n" +
+            "\n" +
+            "varying vec3 v_Position;\n" +
+            "varying vec4 v_Color;\n" +
+            "varying vec3 v_Normal;\n" +
+            "varying vec2 v_TexCoordinate;\n" +
+            "\n" +
+            "void main() {\n" +
+            "\n" +
+            "    float distance = length(u_LightPos - v_Position);\n" +
+            "    vec3 lightVector = normalize(u_LightPos - v_Position);\n" +
+            "    float diffuse = max(dot(v_Normal, lightVector), 0.2);\n" +
+            "\n" +
+            "    diffuse = diffuse * (1.0/ (1.0 + (0.10 * distance)));\n" +
+            "    diffuse = diffuse + 0.3;\n" +
+            "\n" +
+            "   if( u_isColorPicking > 1.0 ) {\n" +
+            "       gl_FragColor = v_Color; \n" +
+            "   } else {\n" +
+//            "    gl_FragColor = (v_Color * diffuse * texture2D(u_Texture, v_TexCoordinate));\n" +
+            "       gl_FragColor = (gl_FrontLightProduct[0].ambient * texture2D(u_Texture, v_TexCoordinate));\n" +
 //            "    gl_FragColor = texture2D(u_Texture, v_TexCoordinate);\n" +
             "   }\n" +
             "}";

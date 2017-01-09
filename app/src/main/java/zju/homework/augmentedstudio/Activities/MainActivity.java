@@ -33,7 +33,7 @@ import zju.homework.augmentedstudio.Utils.Util;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static String LOGTAG = MainActivity.class.getName();
+    private static String LOGTAG = MainActivity.class.getSimpleName();
 
     private Account mAccount = null;    //当前用户
 

@@ -44,7 +44,7 @@ import static android.R.id.message;
 
 public class Util {
 
-    private static final String LOGTAG = Util.class.getName();
+    private static final String LOGTAG = Util.class.getSimpleName();
 
     private static int BUFFER_SIZE = 1024;
 

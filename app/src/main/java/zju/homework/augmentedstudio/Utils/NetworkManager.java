@@ -21,7 +21,7 @@ import java.net.URL;
 
 public class NetworkManager {
 
-    final static String LOG_TAG = NetworkManager.class.getName();
+    final static String LOG_TAG = NetworkManager.class.getSimpleName();
 
     final static int RESPONSE_OK = 200;
 

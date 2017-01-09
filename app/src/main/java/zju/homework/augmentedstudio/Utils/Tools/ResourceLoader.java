@@ -26,7 +26,7 @@ import zju.homework.augmentedstudio.Models.ObjObject;
 
 public class ResourceLoader {
 
-    private static final String LOGTAG = ResourceLoader.class.getName();
+    private static final String LOGTAG = ResourceLoader.class.getSimpleName();
 
     private static ResourceLoader instance = null;
 

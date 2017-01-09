@@ -38,7 +38,7 @@ import zju.homework.augmentedstudio.Shaders.VideoBackgroundShader;
 
 public class ARBaseRenderer {
 
-    private static final String LOGTAG = "SampleAppRenderer";
+    private static final String LOGTAG = ARBaseRenderer.class.getSimpleName();
 
     private RenderingPrimitives mRenderingPrimitives = null;
     private ARAppRendererControl mRenderingInterface = null;
