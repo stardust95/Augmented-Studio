@@ -9,6 +9,10 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.opengl.EGLContext;
 import android.opengl.GLES20;
@@ -76,6 +80,7 @@ import zju.homework.augmentedstudio.GL.ARGLView;
 import zju.homework.augmentedstudio.Interfaces.ARApplicationControl;
 import zju.homework.augmentedstudio.Java.Account;
 import zju.homework.augmentedstudio.Java.ImageAdapter;
+import zju.homework.augmentedstudio.Models.CubeObject;
 import zju.homework.augmentedstudio.Models.Material;
 import zju.homework.augmentedstudio.Models.MeshObject;
 import zju.homework.augmentedstudio.Models.ModelObject;
@@ -180,8 +185,42 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         scaleListener = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());
 
+        initSensor();
     }
 
+    private void initSensor(){
+
+        SensorManager sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+
+        SensorEventListener LightSensorListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(final SensorEvent event) {
+                if( event.sensor.getType() == Sensor.TYPE_LIGHT ){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(LOGTAG, "light value:" + event.values[0]);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                Log.i(LOGTAG, "accuracy changed: " + accuracy);
+            }
+        };
+        Sensor lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+        if( lightSensor != null ){
+            makeToast("Light Sensor is available");
+            sensorManager.registerListener(
+                    LightSensorListener,
+                    lightSensor,
+                    SensorManager.SENSOR_DELAY_FASTEST);
+        }else {
+            makeToast("Light Sensor is not available");
+        }
+    }
 
     private class GestureListener extends
             GestureDetector.SimpleOnGestureListener
@@ -394,6 +433,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             }
 
             initLayouts();
+
+            loadObjModel("/sdcard/APK/armchair.obj");
 
             try{
                 appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
@@ -851,6 +892,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     final public static int CMD_LOCAL_MODEL = 11;
 
     final public static int CMD_SHARE_ONLINE = 12;
+    final public static int CMD_CREATE_CUBE = 13;
 
     private AppMenu mAppMenu;
 
@@ -859,7 +901,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private boolean mContAutofocus = false;
     private boolean mExtendedTracking = false;
 
-    private int mStartTrackerIndex = 13;
+    private int mStartTrackerIndex = 14;
 
 
     // 设置菜单
@@ -918,6 +960,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //        group.addRadioItem("Tarmac", mStartDatasetsIndex + 1, false);
 
         group = mAppMenu.addGroup("Others", true);
+        group.addTextItem("Create Cube", CMD_CREATE_CUBE);
         group.addTextItem("ScreenShot Share", CMD_SHARE_ONLINE);
 
         mAppMenu.attachMenu();
@@ -1241,6 +1284,11 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                 });
 
                 break;
+            case CMD_CREATE_CUBE:
+                mRenderer.getModels().add(new CubeObject());
+
+
+                break;
 
             default:
                 if (command >= mStartDatasetsIndex
@@ -1281,6 +1329,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         return result;
     }
+
 
     private void showToast(String text)
     {
@@ -1327,6 +1376,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         return Bitmap.createBitmap(bitmapSource, w, h, Bitmap.Config.ARGB_8888);
     }
 
+    public void makeToast(final String content){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(ARSceneActivity.this, content, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
     @Override
     public void onBackPressed() {
         ActivityCollector.finishAll();

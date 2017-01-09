@@ -6,7 +6,7 @@ package zju.homework.augmentedstudio.Shaders;
 
 public class ObjectShader {
 
-    public static final String CUBE_MESH_VERTEX_SHADER = " \n" + "\n"+
+    public static final String OBJECT_MESH_VERTEX_SHADER = " \n" + "\n"+
             "precision mediump float;\n" +
             "uniform mat4 u_MVPMatrix;\n" +
             "uniform mat4 u_MVMatrix;\n" +
@@ -31,7 +31,7 @@ public class ObjectShader {
             "     v_TexCoordinate = a_TexCoordinate;\n" +
             "}";
 
-    public static final String CUBE_MESH_FRAGMENT_SHADER = " \n" + "\n"+
+    public static final String OBJECT_MESH_FRAGMENT_SHADER = " \n" + "\n"+
             "precision mediump float;\n" +
             "uniform vec3 u_LightPos;\n" +
             "uniform sampler2D u_Texture;\n" +
@@ -51,7 +51,7 @@ public class ObjectShader {
             "    diffuse = diffuse + 0.3;\n" +
             "\n" +
 //            "    gl_FragColor = (v_Color * diffuse * texture2D(u_Texture, v_TexCoordinate));\n" +
-//            "    gl_FragColor = (v_Color * texture2D(u_Texture, v_TexCoordinate));\n" +
-            "    gl_FragColor = texture2D(u_Texture, v_TexCoordinate);\n" +
+            "    gl_FragColor = (v_Color * texture2D(u_Texture, v_TexCoordinate));\n" +
+//            "    gl_FragColor = texture2D(u_Texture, v_TexCoordinate);\n" +
             "}";
 }
