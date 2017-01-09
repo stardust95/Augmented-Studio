@@ -35,6 +35,7 @@ public class ObjectShader {
             "precision mediump float;\n" +
             "uniform vec3 u_LightPos;\n" +
             "uniform sampler2D u_Texture;\n" +
+            "uniform float u_isColorPicking;\n" +
             "\n" +
             "varying vec3 v_Position;\n" +
             "varying vec4 v_Color;\n" +
@@ -50,8 +51,12 @@ public class ObjectShader {
             "    diffuse = diffuse * (1.0/ (1.0 + (0.10 * distance)));\n" +
             "    diffuse = diffuse + 0.3;\n" +
             "\n" +
+            "   if( u_isColorPicking > 1.0 ) {\n" +
+            "       gl_FragColor = v_Color; \n" +
+            "   } else {\n" +
 //            "    gl_FragColor = (v_Color * diffuse * texture2D(u_Texture, v_TexCoordinate));\n" +
-            "    gl_FragColor = (v_Color * texture2D(u_Texture, v_TexCoordinate));\n" +
+            "       gl_FragColor = (v_Color * texture2D(u_Texture, v_TexCoordinate));\n" +
 //            "    gl_FragColor = texture2D(u_Texture, v_TexCoordinate);\n" +
+            "   }\n" +
             "}";
 }

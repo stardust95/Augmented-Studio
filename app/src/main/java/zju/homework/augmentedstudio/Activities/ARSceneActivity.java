@@ -1250,8 +1250,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                         bb = null;
 
                         for (int i = 0; i < screenshotSize; ++i) {
-                            // The alpha and green channels' positions are preserved while the      red and blue are swapped
-                            pixelsBuffer[i] = ((pixelsBuffer[i] & 0xff00ff00)) |    ((pixelsBuffer[i] & 0x000000ff) << 16) | ((pixelsBuffer[i] & 0x00ff0000) >> 16);
+                            // The alpha and green channels' positions are preserved while the  red and blue are swapped
+                            pixelsBuffer[i] = ((pixelsBuffer[i] & 0xff00ff00)) | ((pixelsBuffer[i] & 0x000000ff) << 16) | ((pixelsBuffer[i] & 0x00ff0000) >> 16);
                         }
 
                         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);

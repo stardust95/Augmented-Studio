@@ -34,6 +34,8 @@ public abstract class MeshObject
     protected List<Material> materials;
     protected float height, width;
 
+    protected float[] color = new float[]{ 1f, 1f, 1f, 1f};
+
     protected float[] position = new float[3];
     protected float[] rotation = new float[3];
     protected float scale = 30f;
@@ -180,6 +182,14 @@ public abstract class MeshObject
 
     public String getModelName() {
         return modelName;
+    }
+
+    public float[] getColor() {
+        return color;
+    }
+
+    public void setColor(float[] color) {
+        this.color = color;
     }
 
     public List<Material> getMaterials() {
