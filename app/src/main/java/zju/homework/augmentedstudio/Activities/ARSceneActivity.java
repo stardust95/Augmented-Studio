@@ -12,6 +12,7 @@ import android.hardware.Camera;
 import android.net.Uri;
 import android.opengl.EGLContext;
 import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -56,6 +57,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.security.acl.AclEntry;
 import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -94,6 +96,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         AdapterView.OnItemSelectedListener, AppMenuInterface {
 
     private static final String LOGTAG = ARSceneActivity.class.getName();
+
+    public final static String BUNDLE_GROUP = "group";
+    public final static String BUNDLE_USER = "user";
+    public final static String BUNDLE_DATASET = "dataset";
+    public final static String BUNDLE_OBJECTS = "objects";
+    public final static String BUNDLE_TRACKER = "tracker";
 
     private ARGLView mGLView;
 
@@ -139,6 +147,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
     private ArrayList<ObjectInfoData> objectInfoDataArrayList = null;
 
+    private boolean isRotationTracker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,10 +158,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         Bundle bundle = getIntent().getExtras();
 
-        mDatasetStrings = bundle.getStringArrayList("dataset");
-        groupId = bundle.getString("group");
-        userid = bundle.getString("user");
-        objectInfoDataArrayList = bundle.getParcelableArrayList("objects");
+        isRotationTracker = bundle.getBoolean(BUNDLE_TRACKER);
+//        isRotationTracker = true;
+        mDatasetStrings = bundle.getStringArrayList(BUNDLE_DATASET);
+        groupId = bundle.getString(BUNDLE_GROUP);
+        userid = bundle.getString(BUNDLE_USER);
+        objectInfoDataArrayList = bundle.getParcelableArrayList(BUNDLE_OBJECTS);
 
         mDatasetsNumber = mDatasetStrings.size();
 
@@ -421,10 +433,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         mGLView.init(translucent, depthSize, stencilSize);
 
         mRenderer = new ARAppRenderer(this, appSession);
+        mRenderer.setTrackerMode( this.isRotationTracker ? ARAppRenderer.TrackerMode.ROTATION_TRACKER
+                                                               : ARAppRenderer.TrackerMode.OBJECT_TRACKER );
 
         mGLView.setRenderer(mRenderer);
 
-//        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         mGLView.setZOrderMediaOverlay(true);
 
 //        mGestureDetector = new GestureDetector(this, new GestureListen)
@@ -626,7 +640,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         ObjectTracker objectTracker = (ObjectTracker) tManager
                 .getTracker(ObjectTracker.getClassType());
         if (objectTracker == null)
-            return false;
+            return true;
 
         if (mCurrentDataset == null)
             mCurrentDataset = objectTracker.createDataSet();
@@ -671,7 +685,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         ObjectTracker objectTracker = (ObjectTracker) tManager
                 .getTracker(ObjectTracker.getClassType());
         if (objectTracker == null)
-            return false;
+            return true;
 
         if (mCurrentDataset != null && mCurrentDataset.isActive())
         {
@@ -845,6 +859,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private boolean mContAutofocus = false;
     private boolean mExtendedTracking = false;
 
+    private int mStartTrackerIndex = 13;
+
+
     // 设置菜单
     private void setAppMenuSettings()
     {
@@ -852,6 +869,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         group = mAppMenu.addGroup("", false);
         group.addTextItem(getString(R.string.menu_back), -1);
+
+        group = mAppMenu
+                .addGroup("Tracker", true);
+        group.addRadioItem("Object Tracker", mStartTrackerIndex, !isRotationTracker);
+        group.addRadioItem("Rotational Tracker", mStartTrackerIndex+1, isRotationTracker);
+
 
         group = mAppMenu.addGroup("Group", true);
         group.addTextItem(getString(R.string.create_group), CMD_CREATE_GROUP);
@@ -888,11 +911,11 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                     CMD_CAMERA_REAR, true);
         }
 
-        group = mAppMenu
-                .addGroup(getString(R.string.menu_datasets), true);
-
-        group.addRadioItem("Stones & Chips", mStartDatasetsIndex, true);
-        group.addRadioItem("Tarmac", mStartDatasetsIndex + 1, false);
+//        group = mAppMenu
+//                .addGroup(getString(R.string.menu_datasets), true);
+//
+//        group.addRadioItem("Stones & Chips", mStartDatasetsIndex, true);
+//        group.addRadioItem("Tarmac", mStartDatasetsIndex + 1, false);
 
         group = mAppMenu.addGroup("Others", true);
         group.addTextItem("ScreenShot Share", CMD_SHARE_ONLINE);
@@ -1226,6 +1249,32 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                     mSwitchDatasetAsap = true;
                     mCurrentDatasetSelectionIndex = command
                             - mStartDatasetsIndex;
+                }else if( command >= mStartTrackerIndex && command < mStartTrackerIndex + 2){
+                    Intent intent = new Intent(ARSceneActivity.this, ARSceneActivity.class);
+                    Bundle extras = new Bundle();
+                    if( mAccount != null ){
+                        if( mAccount.getGroup() != null )
+                            extras.putString(BUNDLE_GROUP, mAccount.getGroup().getId());
+                        extras.putString(BUNDLE_USER, mAccount.getID());
+                    }
+                    ArrayList<String> datasets = new ArrayList<String>();
+                    datasets.add("StonesAndChips.xml");
+                    extras.putStringArrayList(BUNDLE_DATASET, datasets);
+                    extras.putParcelableArrayList(BUNDLE_OBJECTS, objectInfoDataArrayList);
+
+                    if( command == mStartTrackerIndex + 1 )
+                        extras.putBoolean(BUNDLE_TRACKER, true);
+                    else
+                        extras.putBoolean(BUNDLE_TRACKER, false);
+
+                    intent.putExtras(extras);
+                    try{
+                        appSession.stopAR();
+                    }catch (ARApplicationException ex){
+                        ex.printStackTrace();
+                    }
+                    finish();
+                    this.startActivity(intent);
                 }
                 break;
         }

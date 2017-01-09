@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,7 +48,7 @@ public class Util {
 
     private static int BUFFER_SIZE = 1024;
 
-    private static final String HOST = "http://123.206.216.203:3000";
+    private static final String HOST = "http://115.159.110.103:3000";
     public static final String URL_ACCOUNT = HOST + "/accounts";
     public static final String URL_OBJECTS = HOST + "/objects";
     public static final String URL_DOWNLOAD = URL_OBJECTS + "/download/";
@@ -116,7 +117,28 @@ public class Util {
         br.close();
         return sb.toString();
     }
+    public static boolean uriToFile(Context ctx,Uri uri, String path){
+        boolean res = true;
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int len = 0;
+        try{
+            InputStream is = ctx.getContentResolver().openInputStream(uri);
+            FileOutputStream fos = new FileOutputStream(path);
+            while ( (len = is.read(buffer)) > 0 ){
+                fos.write(buffer, 0, len);
+            }
+            fos.close();
+            is.close();
+        }catch (FileNotFoundException ex){
+            ex.printStackTrace();
+            return false;
+        }catch (IOException ex){
+            ex.printStackTrace();
+            return false;
+        }
 
+        return res;
+    }
     public static InputStream stringToInputStream(String str){
         return new ByteArrayInputStream(str.getBytes());
     }

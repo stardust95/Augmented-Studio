@@ -30,8 +30,6 @@ public class ResourceLoader {
 
     private static ResourceLoader instance = null;
 
-//    private static Map<String, ObjObject> ObjObjectes = new HashMap<String,ObjObject>();
-
     private ResourceLoader() {
 
     }

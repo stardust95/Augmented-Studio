@@ -73,7 +73,6 @@ public abstract class MeshObject
         this.position[2] = z;
     }
 
-
     public float[] getRotation() {
         return rotation;
     }

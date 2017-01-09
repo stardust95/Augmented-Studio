@@ -50,9 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
         setButton();
 
-
-        mAccount = new Account("admin");
-        //Util.userLogin(MainActivity.this);
+//        mAccount = new Account("admin");
+        Util.userLogin(MainActivity.this);
 
         //loadARScene();
     }
@@ -65,13 +64,13 @@ public class MainActivity extends AppCompatActivity {
         Bundle extras = new Bundle();
         if( mAccount != null ){
             if( mAccount.getGroup() != null )
-                extras.putString("group", mAccount.getGroup().getId());
-            extras.putString("user", mAccount.getID());
+                extras.putString(ARSceneActivity.BUNDLE_GROUP, mAccount.getGroup().getId());
+            extras.putString(ARSceneActivity.BUNDLE_USER, mAccount.getID());
         }
         ArrayList<String> datasets = new ArrayList<String>();
         datasets.add("StonesAndChips.xml");
-        extras.putStringArrayList("dataset", datasets);
-        extras.putParcelableArrayList("objects", objectInfoList);
+        extras.putStringArrayList(ARSceneActivity.BUNDLE_DATASET, datasets);
+        extras.putParcelableArrayList(ARSceneActivity.BUNDLE_OBJECTS, objectInfoList);
 
         intent.putExtras(extras);
         MainActivity.this.startActivity(intent);
@@ -242,9 +241,11 @@ public class MainActivity extends AppCompatActivity {
         else if(requestCode == Util.REQUEST_OPEN_OBJ) {
             if(resultCode == Activity.RESULT_OK && data != null) {
                 Uri uri = data.getData();
+                String name = uri.getPath().substring(uri.getPath().lastIndexOf('/')+1);
                 ObjectInfoData obj = new ObjectInfoData();
-                String filename = uri.getPath();
-                obj.setName(filename.substring(filename.lastIndexOf('/')+1));
+                String filename = Util.getCacheDir() + "/" + name;
+                Util.uriToFile(this, uri, filename);
+                obj.setName(name);
                 obj.setFilename(filename);
 
                 objectInfoList.add(obj);
