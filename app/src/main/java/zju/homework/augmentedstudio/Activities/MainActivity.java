@@ -50,8 +50,9 @@ public class MainActivity extends AppCompatActivity {
 
         setButton();
 
-//        mAccount = new Account("admin");
-        Util.userLogin(MainActivity.this);
+
+        mAccount = new Account("admin");
+        //Util.userLogin(MainActivity.this);
 
         //loadARScene();
     }
@@ -241,11 +242,9 @@ public class MainActivity extends AppCompatActivity {
         else if(requestCode == Util.REQUEST_OPEN_OBJ) {
             if(resultCode == Activity.RESULT_OK && data != null) {
                 Uri uri = data.getData();
-                String name = uri.getPath().substring(uri.getPath().lastIndexOf('/')+1);
                 ObjectInfoData obj = new ObjectInfoData();
-                String filename = Util.getCacheDir() + "/" + name;
-                Util.uriToFile(this, uri, filename);
-                obj.setName(name);
+                String filename = uri.getPath();
+                obj.setName(filename.substring(filename.lastIndexOf('/')+1));
                 obj.setFilename(filename);
 
                 objectInfoList.add(obj);
