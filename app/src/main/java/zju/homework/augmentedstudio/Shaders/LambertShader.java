@@ -1,96 +1,107 @@
 package zju.homework.augmentedstudio.Shaders;
 
 /**
- * Created by stardust on 2017/1/9.
+ * Created by stardust on 2017/1/10.
  */
 
 public class LambertShader implements IShader{
 
+    @Override
+    public String VERTEX_SHADER() {
+        return VERTEX_SHADER;
+    }
 
     @Override
     public String FRAGMENT_SHADER() {
-        return OBJECT_LAMBERT_FRAGMENT_SHADER;
+        return FRAGMENT_SHADER;
     }
 
-    @Override
-    public String VERTEX_SHADER() {
-        return OBJECT_LAMBERT_VERTEX_SHADER;
-    }
 
-    public static final String OBJECT_LAMBERT_VERTEX_SHADER = " \n" + "\n"+
-            "precision mediump float;\n" +
-            "uniform mat4 u_MVPMatrix;\n" +
-            "uniform mat4 u_MVMatrix;\n" +
-            "uniform vec4 u_Color;\n" +
+    public final static String VERTEX_SHADER =
             "\n" +
-            "attribute vec4 a_Position;\n" +
-            "attribute vec3 a_Normal;\n" +
-            "attribute vec2 a_TexCoordinate;\n" +
-            "\n" +
-            "varying vec4 v_Position;\n" +
-            "varying vec4 v_Color;\n" +
-            "varying vec4 v_Normal;\n" +
-            "varying vec2 v_TexCoordinate;\n" +
-            "\n" +
-            "void main() {\n" +
-            "\n" +
-            "     v_Position = vec4(u_MVMatrix * a_Position);\n" +
-            "     v_Color = u_Color;\n" +
-            "     v_Normal = vec4(u_MVMatrix * vec4(a_Normal, 0.0));\n" +
-            "\n" +
-            "     gl_Position = u_MVPMatrix * a_Position;\n" +
-            "     v_TexCoordinate = a_TexCoordinate;\n" +
-            "}";
+                    "uniform mat4 u_MVMatrix;\n" +
+                    "uniform mat4 u_MVPMatrix;\n" +
+                    "uniform mat4 u_ViewMatrix;\n" +
+                    "// lights\n" +
+                    "uniform vec3 u_LightPos;\n" +
+                    "\n" +
+                    "// vertex attributes\n" +
+                    "attribute vec3 a_Position;\n" +
+                    "attribute vec3 a_Normal;\n" +
+                    "attribute vec2 a_TexCoordinate;\n" +
+                    "\n" +
+                    "// pass the vertex and color information to the fragment shader\n" +
+                    "varying vec3 v_normal;\n" +
+                    "varying vec2 v_textureCoords;\n" +
+                    "varying vec3 lightDir;\n" +
+                    "varying vec3 viewDir;\n" +
+                    "\n" +
+                    "// Shader entry point\n" +
+                    "void main()\n" +
+                    "{\n" +
+                    "    // calculate the final position of the vertex\n" +
+                    "    mat4 mvMatrix = u_MVMatrix;\n" +
+                    "    mat4 mvpMatrix = u_MVPMatrix;\n" +
+                    "    \n" +
+                    "    gl_Position = mvpMatrix * vec4(a_Position, 1.0);\n" +
+                    "    \n" +
+                    "    // compute vertex and normal coordinates in ModelView space\n" +
+                    "    vec3 v_position = vec3(mvMatrix * vec4(a_Position, 1.0));\n" +
+                    "    v_normal = vec3(mvMatrix * vec4(a_Normal, 0.0));\n" +
+                    "    v_textureCoords = a_TexCoordinate;\n" +
+                    "    \n" +
+                    "    vec3 mvLightPos = vec3(mvMatrix * vec4(u_LightPos, 0.0));\n" +
+                    "    lightDir = normalize(mvLightPos.xyz - v_position.xyz);\n" +
+                    "    viewDir = normalize(-v_position);\n" +
+                    "}";
 
-
-    public static final String OBJECT_LAMBERT_FRAGMENT_SHADER =
-           "precision mediump float;\n" +
-                   "\n" +
-                   "varying vec4 v_Position; // Position in world space.\n" +
-                   "varying vec4 v_Normal; // Surface normal in world space.\n" +
-                   "varying vec2 v_TexCoordinate;\n" +
-                   "varying vec4 v_Color; // Light's diffuse and specular contribution.\n" +
-                   "\n" +
-                   "uniform vec3 u_EyePos;   // Eye position in world space.\n" +
-                   "uniform vec3 u_LightPos; // Light's position in world space.\n" +
-                   "\n" +
-                   "uniform vec4 MaterialEmissive;\n" +
-                   "uniform vec4 u_Diffuse;\n" +
-                   "uniform vec4 u_Specular;\n" +
-                   "uniform float u_Shiness;\n" +
-                   "\n" +
-                   "uniform float u_isColorPicking;\n" +
-                   "\n" +
-                   "uniform vec4 u_Ambient; // Global ambient contribution.\n" +
-                   "\n" +
-                   "uniform sampler2D u_Texture;\n" +
-                   "\n" +
-                   "void main()\n" +
-                   "{\n" +
-                   "    // Compute the emissive term.\n" +
-                   "    vec4 Emissive = MaterialEmissive;\n" +
-                   "\n" +
-                   "    // Compute the diffuse term.\n" +
-                   "    vec4 N = normalize( v_Normal );\n" +
-                   "    vec4 u_LightPosW = vec4(u_LightPos, 1.0);\n" +
-                   "    vec4 L = normalize( u_LightPosW - v_Position );\n" +
-                   "    float NdotL = max( dot( N, L ), 0.0 );\n" +
-                   "    vec4 Diffuse =  NdotL * v_Color * u_Diffuse;\n" +
-                   "    \n" +
-                   "    // Compute the specular term.\n" +
-                   "    vec4 u_EyePosW = vec4(u_EyePos, 1.0);\n" +
-                   "    vec4 V = normalize( u_EyePosW - v_Position );\n" +
-                   "    vec4 H = normalize( L + V );\n" +
-                   "    vec4 R = reflect( -L, N );\n" +
-                   "    float RdotV = max( dot( R, V ), 0.0 );\n" +
-                   "    float NdotH = max( dot( N, H ), 0.0 );\n" +
-                   "    vec4 Specular = pow( RdotV, u_Shiness ) * v_Color * u_Specular;\n" +
-                   "    if( u_isColorPicking > 1.0 ){\n" +
-                   "        gl_FragColor = v_Color;\n" +
-                   "    }else{\n" +
-                   "        gl_FragColor = ( u_Ambient + Diffuse + Specular ) * texture2D( u_Texture, v_TexCoordinate );\n" +
-                   "    }\n" +
-                   "}";
-
+    public final static String FRAGMENT_SHADER =
+            "precision mediump float; // use medium precision\n" +
+                    "\n" +
+                    "// texture\n" +
+                    "uniform sampler2D u_Texture;\n" +
+                    "uniform int u_TextureEnable;\n" +
+                    "uniform int u_isColorPicking;\n" +
+                    "\n" +
+                    "// material properties\n" +
+                    "uniform vec3 u_Ambient;\n" +
+                    "uniform vec3 u_Diffuse;\n" +
+                    "uniform vec3 u_Specular;\n" +
+                    "uniform float u_Alpha;\n" +
+                    "uniform float u_Shines;\n" +
+                    "uniform vec4 u_Color;\n" +
+                    "\n" +
+                    "// receive the interpolated values from the vertex shader\n" +
+                    "varying vec3 v_normal;\n" +
+                    "varying vec2 v_textureCoords;\n" +
+                    "\n" +
+                    "varying vec3 lightDir;\n" +
+                    "varying vec3 viewDir;\n" +
+                    "\n" +
+                    "// Shader entry point\n" +
+                    "void main()\n" +
+                    "{\n" +
+                    "    float lambertian = max(dot(lightDir, v_normal), 0.0);\n" +
+                    "    float specular = 0.0;\n" +
+                    "    \n" +
+                    "    if (lambertian > 0.0) {\n" +
+                    "        vec3 reflectDir = reflect(lightDir, v_normal);\n" +
+                    "        float specAngle = max(dot(reflectDir, viewDir), 0.0);\n" +
+                    "        specular = pow(specAngle, u_Shines);\n" +
+                    "    }\n" +
+                    "    \n" +
+                    "    vec3 texColor = vec3(1.0, 1.0, 1.0);\n" +
+                    "    float alpha = u_Alpha;\n" +
+                    "    if (u_TextureEnable == 1) {\n" +
+                    "        vec4 texColor4 = texture2D(u_Texture, v_textureCoords);\n" +
+                    "        texColor = vec3(texColor4);\n" +
+                    "        if (texColor4.a < 1.0)\n" +
+                    "            alpha = texColor4.a;\n" +
+                    "    }\n" +
+                    "    if( u_isColorPicking == 0 )\n" +
+                    "        gl_FragColor = u_Color * vec4(u_Ambient * texColor + lambertian * u_Diffuse * texColor + specular * u_Specular, alpha);\n" +
+                    "    else\n" +
+                    "        gl_FragColor = u_Color;\n" +
+                    "}";
 
 }

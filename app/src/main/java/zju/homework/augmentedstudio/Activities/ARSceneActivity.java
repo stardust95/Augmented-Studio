@@ -116,7 +116,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private RelativeLayout mUILayout;
     private View mBottomBar;
     private View mCameraButton;
-
+    private boolean useLightSensor = true;
 
     LoadingDialogHandler loadingDialogHandler = new LoadingDialogHandler(this);
 
@@ -189,16 +189,16 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         SensorEventListener LightSensorListener = new SensorEventListener() {
 
-            private float maxLight = 50;
+            private float maxLight = 80;
             @Override
             public void onSensorChanged(final SensorEvent event) {
-                if( event.sensor.getType() == Sensor.TYPE_LIGHT ){
+                if( event.sensor.getType() == Sensor.TYPE_LIGHT  && useLightSensor ){
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             Log.i(LOGTAG, "light value:" + event.values[0]);
                             maxLight = Math.max(event.values[0], maxLight);
-                            float lightColor = event.values[0] / maxLight;
+                            float lightColor = Math.max( event.values[0] / maxLight, 0.2f );
                             if( mRenderer != null ){
                                 mRenderer.getModels().get(0).setColor(new float[]{ lightColor, lightColor, lightColor, 1.0f });
                                 mRenderer.setLightColor(new float[]{ lightColor, lightColor, lightColor, 1.0f });
@@ -467,7 +467,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             mRenderer.getModels().add(lightCube);
             spinnerArray.add("Light");
 
-            loadObjModel("armchair",Util.getCacheDir() + "/armchair/armchair.obj" );
+//            loadObjModel("armchair",Util.getCacheDir() + "/armchair/armchair.obj" );
+            loadObjModel("armchair", "/sdcard/APK/armchair.obj" );
 
             mRenderer.getModels().add(new CubeObject());
             spinnerArray.add("Cube");
@@ -567,10 +568,10 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         }
         int select = mRenderer.getSelectIndex();
 
-        if( select < 0 ){
+        if( select <= 0 ){
             spinner.setSelection(0);
         }else{
-            spinner.setSelection(select+1);
+            spinner.setSelection(select);
         }
 
 
@@ -941,6 +942,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     final public static int CMD_SHARE_ONLINE = 12;
     final public static int CMD_CREATE_CUBE = 13;
 
+    final public static int CMD_LIGHT_SENSOR = 14;
+
     private AppMenu mAppMenu;
 
     private boolean mSwitchDatasetAsap = false;
@@ -948,7 +951,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private boolean mContAutofocus = false;
     private boolean mExtendedTracking = false;
 
-    private int mStartTrackerIndex = 14;
+    private int mStartTrackerIndex = 15;
 
 
     // 设置菜单
@@ -964,13 +967,13 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         group.addRadioItem("Object Tracker", mStartTrackerIndex, !isRotationTracker);
         group.addRadioItem("Rotational Tracker", mStartTrackerIndex+1, isRotationTracker);
 
-
         group = mAppMenu.addGroup("Group", true);
         group.addTextItem(getString(R.string.create_group), CMD_CREATE_GROUP);
         group.addTextItem(getString(R.string.join_group), CMD_JOIN_GROUP);
         group.addTextItem(getString(R.string.exit_group), CMD_EXIT_GROUP);
 
         group = mAppMenu.addGroup("", true);
+        group.addSelectionItem("Lightsensor", CMD_LIGHT_SENSOR, useLightSensor);
         group.addSelectionItem(getString(R.string.menu_extended_tracking),
                 CMD_EXTENDED_TRACKING, false);
         group.addSelectionItem(getString(R.string.menu_contAutofocus),
@@ -1111,7 +1114,13 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                 }
                 doStartTrackers();
                 break;
-
+            case CMD_LIGHT_SENSOR:
+                useLightSensor = !useLightSensor;
+                if( !useLightSensor ){
+                    float color = 0.5f;
+                    mRenderer.setLightColor(new float[]{ color, color, color, 1.0f });
+                }
+                break;
             case CMD_EXTENDED_TRACKING:
                 for (int tIdx = 0; tIdx < mCurrentDataset.getNumTrackables(); tIdx++)
                 {
