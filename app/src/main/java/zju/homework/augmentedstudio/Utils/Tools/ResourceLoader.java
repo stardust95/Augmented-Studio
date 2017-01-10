@@ -145,7 +145,6 @@ public class ResourceLoader {
                 }else if( words[0].equals("mtllib") ){
                     materials = MTLReader.loadMTL(fileName.substring(0, fileName.lastIndexOf('/'))+"/"+words[1]);
                 }
-
             }
 
             for (int i=0; i<positionVertices.size(); i++) {
@@ -219,8 +218,21 @@ public class ResourceLoader {
 
 
             ObjObject object = new ObjObject(finalIndices, finalVertices);
-            if( materials != null )
+            if( materials != null ){
                 object.setMaterials(materials);
+                for(Material material : materials){
+                    if( material.getAmbientColor() != null )
+                        object.setMaterialAmbient(material.getAmbientColor());
+                    if( material.getDiffuseColor() != null )
+                        object.setMaterialDiffuse(material.getDiffuseColor());
+                    if( material.getSpecularColor() != null )
+                        object.setMaterialSpecular(material.getSpecularColor());
+                    if( material.getShine() > 0 )
+                        object.setShine(material.getShine());
+                    if( material.getAlpha() > 0 )
+                        object.setAlpha(material.getAlpha());
+                }
+            }
 
             object.initialize();
             Log.v(LOGTAG, "Successfully loaded model from OBJ");
@@ -275,7 +287,4 @@ public class ResourceLoader {
         return textureHandle[0];
     }
 
-//    public ObjObject getObjObjectByName(String name) {
-//        return ObjObjectes.get(name);
-//    }
 }

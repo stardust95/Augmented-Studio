@@ -14,9 +14,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
-import android.opengl.EGLContext;
 import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -61,13 +59,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.security.acl.AclEntry;
 import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-
-import javax.microedition.khronos.egl.EGL10;
 
 import zju.homework.augmentedstudio.AR.ARAppRenderer;
 import zju.homework.augmentedstudio.AR.ARApplicationSession;
@@ -114,7 +109,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
     private ARApplicationSession appSession;
 
-    //private GestureDetector mGestureDetector = new GestureDetector(this, new GestureListener());
+    private GestureDetector mGestureDetector ;
 
     private NetworkManager networkManager = new NetworkManager();
     // View overlays to be displayed in the Augmented View
@@ -134,7 +129,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
     private boolean mContAutoFocus = false;
 
-    private ScaleGestureDetector scaleListener;
+    private ScaleGestureDetector mScaleDetector;
 
     private String userid;
     private Account mAccount = null;
@@ -181,9 +176,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
         appSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        spinnerArray = new ArrayList<>();
+        mGestureDetector = new GestureDetector(this.getApplicationContext(), new GestureListener());
 
-        scaleListener = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());
+        mScaleDetector = new ScaleGestureDetector(this.getApplicationContext(), new ScaleGestureListener());;
 
         initSensor();
     }
@@ -193,6 +188,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         SensorManager sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 
         SensorEventListener LightSensorListener = new SensorEventListener() {
+
+            private float maxLight = 50;
             @Override
             public void onSensorChanged(final SensorEvent event) {
                 if( event.sensor.getType() == Sensor.TYPE_LIGHT ){
@@ -200,6 +197,12 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                         @Override
                         public void run() {
                             Log.i(LOGTAG, "light value:" + event.values[0]);
+                            maxLight = Math.max(event.values[0], maxLight);
+                            float lightColor = event.values[0] / maxLight;
+                            if( mRenderer != null ){
+                                mRenderer.getModels().get(0).setColor(new float[]{ lightColor, lightColor, lightColor, 1.0f });
+                                mRenderer.setLightColor(new float[]{ lightColor, lightColor, lightColor, 1.0f });
+                            }
                         }
                     });
                 }
@@ -255,6 +258,17 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
             return true;
         }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            selectObject((int) e.getX(), (int) e.getY());
+            return super.onDoubleTap(e);
+        }
+
+        @Override
+        public boolean onDoubleTapEvent(MotionEvent e) {
+            return super.onDoubleTapEvent(e);
+        }
     }
 
 
@@ -291,9 +305,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     public boolean onTouchEvent(final MotionEvent event) {
 //        Log.i(LOGTAG, "OnTouchEvent");
         super.onTouchEvent(event);
+        mGestureDetector.onTouchEvent(event);
         boolean result = false;
-        if( event.getAction() == MotionEvent.ACTION_UP )
-           selectObject((int) event.getX(), (int) event.getY());
 
         if( event.getAction() == MotionEvent.ACTION_DOWN ){
             touchDownX = event.getX();
@@ -305,7 +318,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             if (mAppMenu != null && mAppMenu.processEvent(event))
                 return true;
         }else {
-            scaleListener.onTouchEvent(event);
+            mScaleDetector.onTouchEvent(event);
 
             mRenderer.handleTouchEvent(event);
             mGLView.requestRender();
@@ -339,23 +352,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //
 //    private String buildingFilename = "/storage/emulated/0/Buildings.txt";
 //    private String objFilename = "/storage/emulated/0/APK/armchair.obj";
-    private void loadObjModel(final String objPath){
+    private void loadObjModel(final String objName, final String objPath){
 //        Log.i(LOGTAG, objFilename.substring(0, objFilename.lastIndexOf('/')));
         final ResourceLoader loader = ResourceLoader.getResourceLoader();
-        final String objName = objPath.substring(objPath.lastIndexOf('/')+1);
-        Log.i(LOGTAG, objName)  ;
-//        mRenderer.setActive(false);
-        AsyncTask task = new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object[] params) {
-//                mRenderer.getModels().add(object);
-                return null;
-            }
-
-        };
+        Log.i(LOGTAG, objName);
+        spinnerArray.add(objName);
         ObjObject objObject = loader.loadObjObject(objName, objPath);
-        mRenderer.getModels().add(objObject);
-
+        if( objObject != null )
+            mRenderer.getModels().add(objObject);
         return;
     }
 
@@ -453,13 +457,22 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
                     LayoutParams.MATCH_PARENT));
 
             for(ObjectInfoData objectInfoData : objectInfoDataArrayList){
-                loadObjModel(objectInfoData.getFilename());
-                spinnerArray.add(objectInfoData.getName());
+                loadObjModel(objectInfoData.getName(), objectInfoData.getFilename());
             }
 
-            initLayouts();
+            CubeObject lightCube = new CubeObject();       // light cube
+            lightCube.setPosition(mRenderer.getLightPos());
+            lightCube.setScale(10f);
 
-            loadObjModel("/sdcard/APK/armchair.obj");
+            mRenderer.getModels().add(lightCube);
+            spinnerArray.add("Light");
+
+            loadObjModel("armchair",Util.getCacheDir() + "/armchair/armchair.obj" );
+
+            mRenderer.getModels().add(new CubeObject());
+            spinnerArray.add("Cube");
+
+            initLayouts();
 
             try{
                 appSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT);
@@ -552,6 +565,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 //            }
 
         }
+        int select = mRenderer.getSelectIndex();
+
+        if( select < 0 ){
+            spinner.setSelection(0);
+        }else{
+            spinner.setSelection(select+1);
+        }
+
 
     }
 
@@ -572,7 +593,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
 
 
     Spinner spinner = null;
-    private ArrayList<String> spinnerArray = null;          // must use this theme
+    private ArrayList<String> spinnerArray = new ArrayList<>();;          // must use this theme
 
     private void initLayouts(){
         String[] buttonTexts = new String[]{ "Rotate", "Transform" };
@@ -623,7 +644,7 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         spinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         spinner.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1f));
         spinner.setAdapter(new ArrayAdapter<String>(this, android.support.v7.appcompat.R.layout.support_simple_spinner_dropdown_item, spinnerArray));
-
+        spinner.setSelection(0);
         spinner.setOnItemSelectedListener(this);
 
         ll.addView(spinner);
@@ -634,15 +655,15 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 //        ((TextView) parent.getChildAt(0)).setTextColor(Color.BLACK);
-        mRenderer.changeSelection((int)id);
-        mGLView.requestRender();
+//        mRenderer.changeSelection((int)id);
+//        mGLView.requestRender();
 }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
         // Another interface callback
-        mRenderer.changeSelection(-1);
-        mGLView.requestRender();
+//        mRenderer.changeSelection(-1);
+//        mGLView.requestRender();
     }
 
     @Override
@@ -1360,20 +1381,6 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
     private void showToast(String text)
     {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
-    }
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-//        loadObjModel(objFilename);
-//        if(requestCode == Util.REQUEST_OPEN_OBJ && data != null) {
-//            /*打开OBJ*/
-//            Uri uri = data.getData();
-//            Log.i(LOGTAG, uri.getPath());
-//            this.loadObjModel(uri.getPath());
-//        }
     }
 
     // from other answer in this question

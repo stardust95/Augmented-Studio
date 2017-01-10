@@ -21,26 +21,30 @@ import zju.homework.augmentedstudio.Container.TransformData;
 public abstract class MeshObject
 {
 
-    private final float[] defaultAmbient = new float[]{ 0.2f, 0.2f, 0.2f };
+    private final float[] defaultAmbient = new float[]{ 0.2f, 0.2f, 0.2f, 0.2f };
     private final float[] defaultSpecular = new float[]{ 0, 0, 0 };
     private final float[] defaultDiffuse = new float[]{ 0.8f, 0.8f, 0.8f };
 
-    private final float[] selectedAmbient = new float[]{ 1f, 0f, 0f };
-    private final float[] selectedSpecular = new float[]{ 1f, 0f, 0f };
-    private final float[] selectedDiffuse = new float[]{ 1f, 0f, 0f };
 
     protected String modelName;
 
     protected List<Material> materials;
     protected float height, width;
 
-    protected float[] color = new float[]{ 0f, 0f, 0f, 1f};
+    protected float[] color = new float[]{ 0.5f, 0.5f, 0.5f, 1f};
 
     protected float[] position = new float[3];
     protected float[] rotation = new float[3];
     protected float scale = 30f;
     public final float MAXSCALE = scale * 20;
     public final float MINSCALE = 1;
+
+    protected float[] materialAmbient = defaultAmbient.clone();
+    protected float[] materialDiffuse = defaultDiffuse.clone();
+    protected float[] materialSpecular = defaultSpecular.clone();
+    protected float shine = 50.0f;
+    protected float alpha = 1.0f;
+
 
     protected int textureID;
 
@@ -198,5 +202,45 @@ public abstract class MeshObject
 
     public void setMaterials(List<Material> materials) {
         this.materials = materials;
+    }
+
+    public float[] getMaterialAmbient() {
+        return materialAmbient;
+    }
+
+    public void setMaterialAmbient(float[] materialAmbient) {
+        this.materialAmbient = materialAmbient;
+    }
+
+    public float[] getMaterialDiffuse() {
+        return materialDiffuse;
+    }
+
+    public void setMaterialDiffuse(float[] materialDiffuse) {
+        this.materialDiffuse = materialDiffuse;
+    }
+
+    public float[] getMaterialSpecular() {
+        return materialSpecular;
+    }
+
+    public void setMaterialSpecular(float[] materialSpecular) {
+        this.materialSpecular = materialSpecular;
+    }
+
+    public float getShine() {
+        return shine;
+    }
+
+    public void setShine(float shine) {
+        this.shine = shine;
+    }
+
+    public float getAlpha() {
+        return alpha;
+    }
+
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
     }
 }
