@@ -1,11 +1,14 @@
 package zju.homework.augmentedstudio.Activities;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -87,8 +90,6 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout mUrl;
     private LinearLayout mOpenAR;
     private Button mClear;
-
-
 
     private void downloadModel(final ObjectInfoData objectInfoData){
         final String modelName = objectInfoData.getName();
@@ -214,7 +215,12 @@ public class MainActivity extends AppCompatActivity {
         mOpenAR.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadARScene();      //在这里打开新的活动
+                int result = Util.requestPermission(MainActivity.this, Manifest.permission.CAMERA, Util.REQUEST_ASK_FOR_CAMERA);
+                if( result == Util.RESULT_GRANTED){
+                    loadARScene();
+                }else if( result == Util.RESULT_DENIED ){
+                    makeToast("No camera permissions");
+                }
             }
         });
 
@@ -228,6 +234,25 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case Util.REQUEST_ASK_FOR_CAMERA: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    loadARScene();
+                } else {
+                    makeToast("No camera permissions");
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

@@ -447,8 +447,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                         //Rotate around the axis otherwise
                     } else {
                         float[] position = models.get(selectIndex).getPosition().clone();
-                        position[0] += dx * TRANSFORM_SPEED;
-                        position[1] -= dy * TRANSFORM_SPEED;
+                        position[0] += dy * TRANSFORM_SPEED;
+                        position[1] += dx * TRANSFORM_SPEED;
                         if( !checkCollision(selectIndex, position) ){
                             models.get(selectIndex).setPosition(position);
                         }else {

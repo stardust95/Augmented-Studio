@@ -2,9 +2,11 @@ package zju.homework.augmentedstudio.Activities;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -19,6 +21,8 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -65,6 +69,7 @@ import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.jar.Manifest;
 
 import zju.homework.augmentedstudio.AR.ARAppRenderer;
 import zju.homework.augmentedstudio.AR.ARApplicationSession;
@@ -588,8 +593,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         if (isUserDefinedTargetsRunning())
         {
             // Shows the loading dialog
-            loadingDialogHandler
-                    .sendEmptyMessage(LoadingDialogHandler.SHOW_LOADING_DIALOG);
+//            loadingDialogHandler
+//                    .sendEmptyMessage(LoadingDialogHandler.SHOW_LOADING_DIALOG);
 
             // Builds the new target
             startBuild();
@@ -685,8 +690,8 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         mCameraButton = mUILayout.findViewById(R.id.camera_button);
 
         // Gets a reference to the loading dialog container
-        loadingDialogHandler.mLoadingDialogContainer = mUILayout
-                .findViewById(R.id.loading_layout);
+//        loadingDialogHandler.mLoadingDialogContainer = mUILayout
+//                .findViewById(R.id.loading_layout);
 
         startUserDefinedTargets();
         initializeBuildTargetModeViews();
@@ -1513,8 +1518,9 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         return Bitmap.createBitmap(bitmapSource, w, h, Bitmap.Config.ARGB_8888);
     }
 
+    public final static int REQUEST_CAMERA = 10;
 
-    void showErrorDialog()
+    void showErrorDialog(String title, String message)
     {
         if (mErrorDialog != null && mErrorDialog.isShowing())
             mErrorDialog.dismiss();
@@ -1531,25 +1537,40 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
         mErrorDialog.setButton(DialogInterface.BUTTON_POSITIVE,
                 getString(R.string.button_OK), clickListener);
 
-        mErrorDialog.setTitle(getString(R.string.target_quality_error_title));
+//        mErrorDialog.setTitle(getString(R.string.target_quality_error_title));
 
-        String message = getString(R.string.target_quality_error_desc);
+//        String message = getString(R.string.target_quality_error_desc);
 
+        mErrorDialog.setTitle(title);
         // Show dialog box with error message:
         mErrorDialog.setMessage(message);
         mErrorDialog.show();
     }
 
-    void showErrorDialogInUIThread()
+    void showErrorDialogInUIThread(final String title, final String message)
     {
         runOnUiThread(new Runnable()
         {
             public void run()
             {
-                showErrorDialog();
+                showErrorDialog(title, message);
             }
         });
     }
+
+
+    void showErrorDialogInUIThread( )       // default error
+    {
+        runOnUiThread(new Runnable()
+        {
+            public void run()
+            {
+                showErrorDialog(getString(R.string.target_quality_error_title), getString(R.string.target_quality_error_desc));
+            }
+        });
+    }
+
+
 
     public void makeToast(final String content){
         runOnUiThread(new Runnable() {

@@ -3,12 +3,15 @@ package zju.homework.augmentedstudio.Utils;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.opengl.GLES20;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Base64;
 import android.util.Log;
@@ -73,10 +76,25 @@ public class Util {
     }
 
     public static final int REQUEST_OPEN_OBJ = 1;
-    public static final int REQUEST_ASK_FOR_PERMISSION = 2;
+    public static final int REQUEST_ASK_FOR_CAMERA = 2;
     public static final int REQUEST_LOGIN = 3;
     public static final int REQUEST_CREATE_GROUP = 4;
 
+    public static final int RESULT_DENIED = 11;
+    public static final int RESULT_REQUESTING = 11;
+    public static final int RESULT_GRANTED = 11;
+
+    public static int requestPermission(Activity activity, String permission, int requestCode){
+        if(ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED ){
+            if( ActivityCompat.shouldShowRequestPermissionRationale(activity, permission) ){
+                return RESULT_DENIED;
+            }else {
+                ActivityCompat.requestPermissions(activity, new String[]{permission}, requestCode);
+                return RESULT_REQUESTING;
+            }
+        }
+        return RESULT_GRANTED;
+    }
 
     public static void showOpenFileDialog(@NonNull Activity activity, int requestCode){
         Intent intent = new Intent(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ?
