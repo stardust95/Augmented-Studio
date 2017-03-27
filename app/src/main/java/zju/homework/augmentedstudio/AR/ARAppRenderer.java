@@ -240,6 +240,8 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
         GLES20.glEnable(GLES20.GL_CULL_FACE);
         GLES20.glCullFace(GLES20.GL_BACK);
 
+        mActivity.refFreeFrame.render();
+
         float[] modelViewMatrix = new float[16];
         float[] modelViewMatrixInverse = new float[16];
         float[] mvpMatrix = new float[16];

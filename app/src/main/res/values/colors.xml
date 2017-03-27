@@ -17,4 +17,8 @@
     <color name="light_green">#3ba2e2</color>
 
     <color name="dark_red">#db0000</color>
+    <color name="transparent">#00000000</color>
+    <color name="overlay_bottom_bar_separators">#333333</color>
+    <color name="overlay_bottom_bar_background">#1E1E1E</color>
+    <color name="semi_transparent_black">#C8000000</color>
 </resources>

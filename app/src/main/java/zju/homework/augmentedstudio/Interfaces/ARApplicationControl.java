@@ -40,7 +40,6 @@ public interface ARApplicationControl {
     // tracking is ready to start
     void onInitARDone(ARApplicationException e);
 
-
     // This callback is called every cycle
     void onVuforiaUpdate(State state);
 
