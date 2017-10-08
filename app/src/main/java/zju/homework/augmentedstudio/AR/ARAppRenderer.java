@@ -343,7 +343,7 @@ public class ARAppRenderer implements GLSurfaceView.Renderer, ARAppRendererContr
                     for (Material material : materials){
                         if( texEnableHandle >= 0 ) {
                             GLES20.glUniform1i(texEnableHandle, 1);
-//                            Log.i(LOGTAG, "texture is enabled");
+                            Log.i(LOGTAG, "texture is enabled");
                         }
 
                         material.loadTexture();

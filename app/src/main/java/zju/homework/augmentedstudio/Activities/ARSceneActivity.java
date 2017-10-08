@@ -470,6 +470,14 @@ public class ARSceneActivity extends Activity implements ARApplicationControl,
             addContentView(mGLView, new LayoutParams(LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT));
 
+            Log.i(LOGTAG, "objectInfoDataArrayList.size() = " + objectInfoDataArrayList.size());
+
+            for(int i=0; i<objectInfoDataArrayList.size(); i++){
+                ObjectInfoData objectInfoData = objectInfoDataArrayList.get(i);
+                Log.i(LOGTAG, "Loading Object " + objectInfoData.getName());
+                loadObjModel(objectInfoData.getName(), objectInfoData.getFilename());
+            }
+
             mUILayout.bringToFront();
 
             // Hides the Loading Dialog
